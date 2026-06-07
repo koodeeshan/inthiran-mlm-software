@@ -74,3 +74,4 @@ if st.button("Calculate Commission (கணக்கிடு)"):
     st.success(f"👤 **{member_b.name}** இன் மொத்த வருமானம்: **Rs.{member_b.earnings:,}**")
 else:
     st.warning("கணக்கீட்டைப் பார்க்க மேலே உள்ள 'Calculate Commission' பொத்தானை அழுத்தவும் நண்பா.")
+            
