@@ -2,7 +2,8 @@ import streamlit as st
 
 # பக்கத்தின் தலைப்பு மற்றும் வடிவமைப்பு
 st.set_page_config(page_title="MLM Commission Calculator", page_icon="💰", layout="centered")
-st.title("💰 எளிய எம்.எல்.எம் (MLM) கமிஷன் கணக்கீடு")
+st.title("💰 MLM Commission Calculator")
+st.subheader("எளிய எம்.எல்.எம் கமிஷன் கணக்கீடு")
 st.write("---")
 
 class Member:
@@ -40,30 +41,36 @@ class Member:
             level += 1
 
 # --- எம்.எல்.எம் நெட்வொர்க் உருவாக்கம் ---
-
-# லெவல் 0: நிறுவனத்தின் முதன்மை நபர்
 boss = Member("Inthiran")
-
-# லெவல் 1: இந்திரன் சேர்த்த நபர் (ஆனந்த்)
 member_a = Member("Anand", sponsor=boss)
-
-# லெவல் 2: ஆனந்த் சேர்த்த நபர் (பாலா)
 member_b = Member("Bala", sponsor=member_a)
 
 
-# --- விற்பனை மற்றும் கமிஷன் இயக்கம் ---
-st.subheader("📊 நடப்பு விற்பனை விபரங்கள்")
-# பாலா Rs.10,000 மதிப்புள்ள பொருளை விற்கிறார்
-member_b.add_sale(10000)
+# --- இணையதளப் பக்கத்தின் புதிய வடிவமைப்பு ---
 
+st.sidebar.header("⚙️ நெட்வொர்க் விபரங்கள்")
+st.sidebar.write(f"**முதன்மை நபர்:** {boss.name}")
+st.sidebar.write(f"**லெவல் 1 (ஸ்பான்சர்):** {member_a.name}")
+st.sidebar.write(f"**...சேர்த்த நபர்:** {member_b.name}")
 
-# --- இறுதி வருமான நிலை ---
-st.write("")
-st.write("---")
-st.subheader("🏆 ஒவ்வொருவரின் இறுதி வருமானம்")
+st.subheader("📊 புதிய விற்பனையை உள்ளிடவும்")
 
-# அழகான பச்சை நிறப் பெட்டிகளில் அவுட்புட்டைக் காண்பித்தல்
-st.success(f"👤 **{boss.name}** இன் மொத்த வருமானம்: **Rs.{boss.earnings:,}**")
-st.success(f"👤 **{member_a.name}** இன் மொத்த வருமானம்: **Rs.{member_a.earnings:,}**")
-st.success(f"👤 **{member_b.name}** இன் மொத்த வருமானம்: **Rs.{member_b.earnings:,}**")
-        
+# பயனரிடம் இருந்து தொகையைப் பெறும் பாக்ஸ்
+sale_amount = st.number_input("விற்பனைத் தொகையை டைப் செய்யவும் (Rs):", min_value=0, value=10000, step=500)
+
+# கணக்கிடும் பொத்தான்
+if st.button("Calculate Commission (கணக்கிடு)"):
+    st.write("---")
+    # பாலா விற்கும் தொகையாக இதை எடுத்துக்கொள்கிறோம்
+    member_b.add_sale(sale_amount)
+    
+    # --- இறுதி வருமான நிலை ---
+    st.write("")
+    st.write("---")
+    st.subheader("🏆 ஒவ்வொருவரின் இறுதி வருமானம்")
+    
+    st.success(f"👤 **{boss.name}** இன் மொத்த வருமானம்: **Rs.{boss.earnings:,}**")
+    st.success(f"👤 **{member_a.name}** இன் மொத்த வருமானம்: **Rs.{member_a.earnings:,}**")
+    st.success(f"👤 **{member_b.name}** இன் மொத்த வருமானம்: **Rs.{member_b.earnings:,}**")
+else:
+    st.warning("கணக்கீட்டைப் பார்க்க மேலே உள்ள 'Calculate Commission' பொத்தானை அழுத்தவும் நண்பா.")
