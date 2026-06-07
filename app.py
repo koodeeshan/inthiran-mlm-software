@@ -1,84 +1,163 @@
 import streamlit as st
+import gspread
+from google.oauth2.service_account import Credentials
+import pandas as pd
 
-# பக்கத்தின் தலைப்பு மற்றும் வடிவமைப்பு
-st.set_page_config(page_title="MLM Commission Calculator", page_icon="💰", layout="centered")
-st.title("💰 MLM Commission Calculator")
-st.subheader("முழுமையான எம்.எல்.எம் கமிஷன் மேலாண்மை")
+# 1. பக்கத்தின் தலைப்பு மற்றும் லேஅவுட் அமைத்தல்
+st.set_page_config(page_title="A K G Smart Commission Marketing Pvt Ltd", page_icon="💰", layout="centered")
+
+# 2. கூகுள் சீட் இணைப்பு முகவரி
+SHEET_URL = "Https://docs.google.com/spreadsheets/d/1uu7CfjOA4ISDSQKxPVQCLDZufJummYbkMsFnjwWvvWc/edit?usp=drivesdk"
+
+# 3. கூகுள் சீட்டுடன் கனெக்ட் செய்யும் ஃபங்க்ஷன்
+@st.cache_resource
+def get_google_sheet(url):
+    # பொது பொது அணுகல் (Anyone with link as Editor) என்பதால் பொதுவான முறையில் இணைக்கிறோம்
+    gc = gspread.public_api()
+    sh = gc.open_by_url(url)
+    return sh.get_worksheet(0)
+
+try:
+    sheet = get_google_sheet(SHEET_URL)
+except Exception as e:
+    st.error("கூகுள் சீட்டுடன் இணைப்பதில் சிக்கல் உள்ளது நண்பா. பர்மிஷனை 'Editor' என்று மாற்றியுள்ளீர்களா எனச் சரிபார்க்கவும்.")
+    st.stop()
+
+# 4. கூகுள் சீட்டில் இருந்து தரவுகளைப் படித்தல்
+def load_data():
+    records = sheet.get_all_records()
+    # தரவுகள் காலியாக இருந்தால் ஆரம்ப விபரங்களை உருவாக்குதல்
+    if not records:
+        initial_data = [
+            {"Name": "Inthiran", "Sponsor": "None", "Sales": 0, "Earnings": 0},
+            {"Name": "Anand", "Sponsor": "Inthiran", "Sales": 0, "Earnings": 0},
+            {"Name": "Bala", "Sponsor": "Anand", "Sales": 0, "Earnings": 0}
+        ]
+        for row in initial_data:
+            sheet.append_row(list(row.values()))
+        records = initial_data
+    return pd.DataFrame(records)
+
+df_data = load_data()
+
+# Streamlit-இன் தற்காலிக நினைவகத்தில் டேட்டாஃபிரேமை ஏற்றுதல்
+if 'network' not in st.session_state:
+    st.session_state.network = df_data
+
+# 5. கமிஷன் மற்றும் வருமானத்தை அப்டேட் செய்யும் ஃபங்க்ஷன்
+def update_sheet_from_dataframe(df):
+    # கூகுள் சீட்டை முழுமையாகத் துடைத்துவிட்டு புதிய டேட்டாவை எழுதுதல்
+    sheet.clear()
+    sheet.append_row(list(df.columns)) # தலைப்புகள்
+    for index, row in df.iterrows():
+        sheet.append_row(list(row))
+
+def add_sale_and_distribute(sales_person, amount):
+    df = st.session_state.network.copy()
+    
+    # 1. நேரடி விற்பனை செய்தவருக்கு விற்பனைத் தொகையைக் கூட்டுதல்
+    df.loc[df['Name'] == sales_person, 'Sales'] += amount
+    
+    # 2. லெவல் கமிஷன் விதிகள்
+    # நேரடி விற்பனையாளர்: 100%
+    df.loc[df['Name'] == sales_person, 'Earnings'] += amount
+    
+    # ஸ்பான்சர்களைக் கண்டுபிடித்து கமிஷன் வழங்குதல்
+    current_person = sales_person
+    level = 1
+    
+    # கமிஷன் விகிதங்கள்: லெவல் 1 = 50%, லெவல் 2 = 30%, முதன்மை பாஸ் (Inthiran) = மீதி அனைத்தும்
+    commission_rates = {1: 0.50, 2: 0.30}
+    
+    while True:
+        sponsor_row = df[df['Name'] == current_person]
+        if sponsor_row.empty:
+            break
+            
+        sponsor_name = sponsor_row.iloc[0]['Sponsor']
+        if sponsor_name == "None" or pd.isna(sponsor_name):
+            break
+            
+        if level in commission_rates:
+            commission_amount = amount * commission_rates[level]
+            df.loc[df['Name'] == sponsor_name, 'Earnings'] += commission_amount
+        else:
+            # லெவல் 2-க்கு மேல் போனால் அல்லது பிரதான பாஸ் 'Inthiran'-க்கு மீதி 20% கமிஷன்
+            if sponsor_name == "Inthiran":
+                df.loc[df['Name'] == sponsor_name, 'Earnings'] += (amount * 0.20)
+                
+        current_person = sponsor_name
+        level += 1
+        
+    # மாற்றங்களை கூகுள் சீட்டிலும் தற்காலிக நினைவகத்திலும் சேமித்தல்
+    update_sheet_from_dataframe(df)
+    st.session_state.network = df
+
+# 6. புதிய நபரை நெட்வொர்க்கில் சேர்க்கும் ஃபங்க்ஷன்
+def add_new_member(name, sponsor):
+    df = st.session_state.network.copy()
+    if name in df['Name'].values:
+        st.error(f"⚠️ '{name}' என்ற பெயர் ஏற்கனவே நெட்வொர்க்கில் உள்ளது நண்பா!")
+        return False
+        
+    new_row = {"Name": name, "Sponsor": sponsor, "Sales": 0, "Earnings": 0}
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    
+    # கூகுள் சீட்டில் சேர்த்தல்
+    update_sheet_from_dataframe(df)
+    st.session_state.network = df
+    return True
+
+# --- இணையதள வடிவமைப்பு (UI Design) ---
+
+st.title("💰 A K G Smart Commission Marketing Pvt Ltd")
 st.write("---")
 
-# செஷன் ஸ்டேட் (Session State) மூலம் மெம்பர்களின் விபரங்களைச் சேமித்தல்
-if "network" not in st.session_state:
-    # ஆரம்பக்கட்ட நெட்வொர்க் அமைப்பு
-    st.session_state.network = {
-        "Inthiran": {"sponsor": None, "sales": 0, "earnings": 0},
-        "Anand": {"sponsor": "Inthiran", "sales": 0, "earnings": 0},
-        "Bala": {"sponsor": "Anand", "sales": 0, "earnings": 0}
-    }
+# பக்கவாட்டு மெனு (Sidebar) - நிர்வாகப் பகுதிகள்
+st.sidebar.header("🛠️ நிர்வாகக் கட்டுப்பாடுகள்")
 
-def add_new_member(name, sponsor_name):
-    """புதிய நபரை நெட்வொர்க்கில் இணைத்தல்"""
-    if name and name not in st.session_state.network:
-        st.session_state.network[name] = {"sponsor": sponsor_name, "sales": 0, "earnings": 0}
-        return True
-    return False
+# 1. புதிய நபரைச் சேர்த்தல்
+st.sidebar.subheader("👤 புதிய உறுப்பினரைச் சேர்")
+new_name = st.sidebar.text_input("உறுப்பினர் பெயர்:")
+sponsor_list = st.session_state.network['Name'].tolist()
+selected_sponsor = st.sidebar.selectbox("ஸ்பான்சர் (அறிமுகப்படுத்துபவர்):", sponsor_list)
 
-def process_sale(salesperson, amount):
-    """விற்பனைத் தொகையைப் பகிர்ந்து கமிஷன் கணக்கிடுதல்"""
-    # சொந்த விற்பனையைச் சேர்த்தல்
-    st.session_state.network[salesperson]["sales"] += amount
-    
-    # 1. சொந்த விற்பனைக்கு 10% கமிஷன்
-    own_comm = amount * 0.10
-    st.session_state.network[salesperson]["earnings"] += own_comm
-    st.info(f"🔹 **{salesperson}** செய்த விற்பனைத் தொகை: **Rs.{amount:,}**")
-    st.write(f"👉 **{salesperson}** பெற்ற நேரடி கமிஷன் (10%): `Rs.{own_comm:,}`")
-    
-    # 2. மேல் மட்ட ஸ்பான்சர்களுக்கு கமிஷன் பிரித்தல்
-    current_sponsor = st.session_state.network[salesperson]["sponsor"]
-    level = 1
-    commission_rates = {1: 0.05, 2: 0.03} # லெவல் 1 = 5%, லெவல் 2 = 3%
-    
-    while current_sponsor and level in commission_rates:
-        rate = commission_rates[level]
-        indirect_comm = amount * rate
-        st.session_state.network[current_sponsor]["earnings"] += indirect_comm
-        st.write(f"➡️ லெவல் {level} ஸ்பான்சர் **{current_sponsor}** பெற்ற கமிஷன் ({int(rate*100)}%): `Rs.{indirect_comm:,}`")
-        
-        # அடுத்த மேல் மட்டத்திற்குச் செல்லுதல்
-        current_sponsor = st.session_state.network[current_sponsor]["sponsor"]
-        level += 1
-
-# --- பக்கவாட்டுப் பகுதி (Sidebar) - புதிய நபரைச் சேர்த்தல் ---
-st.sidebar.header("➕ புதிய நபரைச் சேர்க்கவும்")
-new_name = st.sidebar.text_input("புதிய நபர் பெயர் (ஆங்கிலத்தில்):")
-sponsor_select = st.sidebar.selectbox("அவரைச் சேர்த்த ஸ்பான்சர் யார்?", list(st.session_state.network.keys()))
-
-if st.sidebar.button("Add to Network (இணைக்கவும்)"):
-    if new_name:
-        if add_new_member(new_name, sponsor_select):
-            st.sidebar.success(f"🎉 {new_name} வெற்றிகரமாக இணைக்கப்பட்டார்!")
+if st.sidebar.button("உறுப்பினரை இணைக்கவும்"):
+    if new_name.strip() != "":
+        if add_new_member(new_name.strip(), selected_sponsor):
+            st.sidebar.success(f"🎉 {new_name} வெற்றிகரமாகச் சேர்க்கப்பட்டார்!")
             st.rerun()
-        else:
-            st.sidebar.error("இந்தப் பெயர் ஏற்கனவே நெட்வொர்க்கில் உள்ளது!")
     else:
-        st.sidebar.warning("தயவுசெய்து பெயரை டைப் செய்யவும்!")
+        st.sidebar.warning("தயவுசெய்து பெயரை டைப் செய்யவும் நண்பா!")
 
-# --- பிரதான பகுதி (Main Page) - கமிஷன் கணக்கீடு ---
-st.subheader("📊 புதிய விற்பனை விபரங்களை உள்ளிடவும்")
+st.sidebar.write("---")
 
-# நெட்வொர்க்கில் உள்ளவர்களில் யார் விற்றார்கள் என்பதைத் தேர்ந்தெடுக்கும் வசதி
-seller = st.selectbox("விற்பனை செய்த நபரைக் தேர்வு செய்யவும்:", list(st.session_state.network.keys()))
-sale_amount = st.number_input("விற்பனைத் தொகை (Rs):", min_value=0, value=10000, step=500)
+# 2. புதிய விற்பனையைப் பதிவு செய்தல்
+st.sidebar.subheader("📈 புதிய விற்பனைப் பதிவு")
+active_members = st.session_state.network['Name'].tolist()
+selected_seller = st.sidebar.selectbox("விற்பனை செய்தவர்:", active_members)
+sale_amount = st.sidebar.number_input("விற்பனைத் தொகை (Rs.):", min_value=10.0, step=10.0, value=100.0)
 
-if st.button("Calculate Commission (கணக்கிடு)"):
-    st.write("---")
-    process_sale(seller, sale_amount)
-    st.write("---")
+if st.sidebar.button("விற்பனையைச் சேர் (கமிஷன் பிரி)"):
+    add_sale_and_distribute(selected_seller, sale_amount)
+    st.sidebar.success(f"🔥 Rs.{sale_amount} கமிஷன் பிரித்தளிக்கப்பட்டது!")
+    st.rerun()
 
-# --- தற்போதைய வருமான நிலை (Live Dashboard) ---
-st.subheader("🏆 நெட்வொர்க் நபர்களின் தற்போதைய வருமானம்")
+# பிரதானப் பக்கம் - தற்போதைய வருமான நிலை விபரங்கள்
+st.header("👥 நபர்களின் தற்போதைய வருமானம்")
 
-# டேபிளாகக் காண்பித்தல்
-for member, details in st.session_state.network.items():
-    sponsor_text = f" (Sponsor: {details['sponsor']})" if details['sponsor'] else " (Main Boss)"
-    st.success(f"👤 **{member}** {sponsor_text} | மொத்த வருமானம்: **Rs.{details['earnings']:,}**")
+for index, row in st.session_state.network.iterrows():
+    name = row['Name']
+    sponsor = row['Sponsor']
+    sales = row['Sales']
+    earnings = row['Earnings']
+    
+    # லேபிள்கள் வடிவமைப்பு
+    if sponsor == "None":
+        identity = f"**{name}** (Main Boss)"
+    else:
+        identity = f"**{name}** (Sponsor: {sponsor})"
+        
+    # அழகான கார்டுகள் வடிவமைப்பு
+    st.info(f"👤 {identity} | **மொத்த விற்பனை:** Rs.{sales:,.1f} | 💰 **மொத்த வருமானம்:** Rs.{earnings:,.1f}")
+    
