@@ -435,4 +435,87 @@ else:
     st.session_state.current_lang = user_info['Language']
     L = LANG_DICT[st.session_state.current_lang]
     
-    chosen_lang = st.sidebar.selectbox("🌐 Language / மொழி", ["தமிழ்", "English", "සිංහල"], index=["தமிழ்", "English", "සිංහල"].index(st.session_state.curre
+    chosen_lang = st.sidebar.selectbox("🌐 Language / மொழி", ["தமிழ்", "English", "සිංහල"], index=["தமிழ்", "English", "සිංහල"].index(st.session_state.current_lang))
+    if chosen_lang != st.session_state.current_lang:
+        update_user_language(current_user, chosen_lang)
+        st.session_state.current_lang = chosen_lang
+        st.rerun()
+
+    col_title, col_logout = st.columns([4, 1])
+    with col_title:
+        st.title(f"{L['welcome']}{current_user}!")
+        st.caption("G A K Smart Marketing Private Limited")
+    with col_logout:
+        if st.button(L["logout"], type="secondary"):
+            st.session_state.logged_in_user = None; st.rerun()
+        
+    st.write("---")
+    
+    # மெம்பர்களின் தகுதி நிலை (Rank) கார்டு
+    current_rank = calculate_rank(user_info['Earnings'])
+    st.info(f"{L['rank_lbl']}: **{current_rank}**")
+    
+    menu_tab1, menu_tab2, menu_tab3, menu_tab4 = st.tabs([L["menu_dash"], L["menu_with"], L["menu_tree"], L["menu_search"]])
+    
+    with menu_tab1:
+        col1, col2, col3 = st.columns(3)
+        with col1: st.metric(label=L["ref_id"], value=str(user_info['Unique_ID']))
+        with col2: st.metric(label=L["my_sales"], value=f"Rs.{user_info['Sales']:,.1f}")
+        with col3: st.metric(label=L["my_earnings"], value=f"Rs.{user_info['Earnings']:,.1f}")
+        
+        st.write("---")
+        st.header(L["new_sale_title"])
+        sale_amount = st.number_input(L["sale_amt_lbl"], min_value=10.0, step=10.0, value=100.0, key="sale_val")
+        if st.button(L["btn_sale_confirm"], use_container_width=True):
+            add_sale_and_distribute(current_user, sale_amount)
+            st.success(L["sale_success"]); st.rerun()
+            
+    with menu_tab2:
+        st.header(L["with_title"])
+        st.write(f"{L['curr_bal']} **Rs. {user_info['Earnings']:,.1f}**")
+        with st.form("withdraw_form"):
+            w_amount = st.number_input(L["with_amt_lbl"], min_value=100.0, value=500.0, step=100.0)
+            w_method = st.selectbox(L["with_method_lbl"], ["Bank of Ceylon (BOC)", "Dialog eZ Cash", "Mobitel mCash", "USDT (Crypto)"])
+            if st.form_submit_button(L["btn_with_submit"], use_container_width=True):
+                if w_amount <= user_info['Earnings']:
+                    request_withdrawal(current_user, w_amount, w_method)
+                    st.success(L["with_success"]); st.rerun()
+                else:
+                    st.error(L["with_bal_err"])
+        st.write("---"); st.subheader(L["with_history"])
+        df_w = get_withdrawals_df(current_user)
+        if df_w.empty: st.info(L["with_no_history"])
+        else: st.dataframe(df_w, use_container_width=True)
+
+    with menu_tab3:
+        st.header(L["tree_title"]); st.write(L["tree_desc"])
+        l1_members = df_net[df_net['Sponsor'] == current_user]
+        with st.container(border=True):
+            st.markdown(f"{L['tree_you']} **{current_user}** ({user_info['Unique_ID']})")
+            if l1_members.empty: st.info(L["tree_no_team"])
+            else:
+                st.write(L["tree_l1"])
+                for _, l1_row in l1_members.iterrows():
+                    col_l1, col_l2 = st.columns([1, 1])
+                    with col_l1: st.success(f"👤 {l1_row['Name']} ({l1_row['Unique_ID']})")
+                    with col_l2:
+                        l2_members = df_net[df_net['Sponsor'] == l1_row['Name']]
+                        if l2_members.empty: st.caption(L["tree_empty"])
+                        else:
+                            for _, l2_row in l2_members.iterrows(): st.info(f"└ 👤 {l2_row['Name']} ({l2_row['Unique_ID']})")
+
+    with menu_tab4:
+        st.header(L["search_title"])
+        search_name = st.text_input(L["search_lbl"], placeholder="Anand")
+        if search_name:
+            search_res = df_net[df_net['Name'].str.lower() == search_name.strip().lower()]
+            if not search_res.empty:
+                member = search_res.iloc[0]
+                with st.container(border=True):
+                    st.subheader(f"{L['search_details']}{member['Name']}")
+                    st.write(f"🆔 **{L['ref_id']}:** {member['Unique_ID']}")
+                    st.write(f"🏆 **தகுதி நிலை (Rank):** {calculate_rank(member['Earnings'])}")
+                    st.write(f"🔹 {L['sponsor_lbl']} {member['Sponsor']}")
+                    st.write(f"📈 {L['my_sales']}: Rs. {member['Sales']:,.1f}")
+                    st.write(f"💰 {L['my_earnings']}: Rs. {member['Earnings']:,.1f}")
+            else: st.error(L["search_no_user"])
