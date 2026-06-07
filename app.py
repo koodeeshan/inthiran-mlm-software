@@ -147,23 +147,6 @@ query_params = st.query_params
 url_ref = query_params.get("ref", "")
 
 df_net = get_network_df()
-
-# --- 🌍 வலது மேல் மூலையில் மொழித் தேர்வு (Language Selector) ---
-lang_col1, lang_col2 = st.columns([4, 1])
-with lang_col2:
-    available_langs = ["தமிழ்", "English"]
-    saved_lang_idx = available_langs.index(st.session_state.current_lang)
-    chosen_lang = st.selectbox("🌐 Language", available_langs, index=saved_lang_idx, label_visibility="collapsed")
-    if chosen_lang != st.session_state.current_lang:
-        st.session_state.current_lang = chosen_lang
-        if st.session_state.logged_in_user:
-            conn = sqlite3.connect(DB_NAME, check_same_thread=False)
-            cursor = conn.cursor()
-            cursor.execute("UPDATE network SET Language=? WHERE Name=?", (chosen_lang, st.session_state.logged_in_user))
-            conn.commit()
-            conn.close()
-        st.rerun()
-
 L = LANG_DICT[st.session_state.current_lang]
 
 # --- UI வடிவமைப்பு ---
@@ -218,4 +201,26 @@ if st.session_state.logged_in_user is None and not st.session_state.is_admin_log
                                    (r_user.strip(), r_pass.strip(), r_sponsor, short_id))
                     conn.commit()
                     conn.close()
-                    st.success("🎉 கணக்கு து
+                    st.success("🎉 கணக்கு துவங்கப்பட்டது! நீங்கள் லாகின் செய்யலாம்.")
+            else:
+                st.warning("⚠️ விபரங்களை நிரப்பவும் நண்பா!")
+
+elif st.session_state.is_admin_logged:
+    st.title("👑 GAK Admin Command Center")
+    if st.sidebar.button("🚪 அட்மின் லாக்-அவுட்", type="primary"):
+        st.session_state.is_admin_logged = False; st.rerun()
+        
+    st.write("---")
+    adm_tab1, adm_tab2 = st.tabs(["📥 Pending verifications", "👥 Full Network DB"])
+    
+    with adm_tab1:
+        st.subheader("Working நிலையில் உள்ள கணக்குகள்")
+        df_working = df_net[df_net['Status'] == 'Working']
+        
+        if df_working.empty:
+            st.info("தற்போது சரிபார்ப்பிற்கு எந்தவொரு கணக்கும் நிலுவையில் இல்லை நண்பா!")
+        else:
+            for _, w_row in df_working.iterrows():
+                with st.container(border=True):
+                    st.subheader(f"👤 பயனர் ஐடி: {w_row['Name']}")
+                    st.write(f"📧 **Email:** {w_row['Email']} | 📞 **Phone:** {w_row['Phone']}")
