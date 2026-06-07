@@ -160,4 +160,3 @@ for index, row in st.session_state.network.iterrows():
         
     # அழகான கார்டுகள் வடிவமைப்பு
     st.info(f"👤 {identity} | **மொத்த விற்பனை:** Rs.{sales:,.1f} | 💰 **மொத்த வருமானம்:** Rs.{earnings:,.1f}")
-    
