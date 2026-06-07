@@ -452,4 +452,23 @@ else:
                         if l2_members.empty:
                             st.caption(L["tree_empty"])
                         else:
-                            for _, l2_row in l2_members.iterrows
+                            for _, l2_row in l2_members.iterrows():
+                                st.info(f"└ 👤 {l2_row['Name']} ({l2_row['Unique_ID']})")
+
+    # --- TAB 4: DOWNLINE LOOKUP SEARCH ---
+    with menu_tab4:
+        st.header(L["search_title"])
+        search_name = st.text_input(L["search_lbl"], placeholder="Anand")
+        
+        if search_name:
+            search_res = df_net[df_net['Name'].str.lower() == search_name.strip().lower()]
+            if not search_res.empty:
+                member = search_res.iloc[0]
+                with st.container(border=True):
+                    st.subheader(f"{L['search_details']}{member['Name']}")
+                    st.write(f"🆔 **{L['ref_id']}:** {member['Unique_ID']}")
+                    st.write(f"🔹 {L['sponsor_lbl']} {member['Sponsor']}")
+                    st.write(f"📈 {L['my_sales']}: Rs. {member['Sales']:,.1f}")
+                    st.write(f"💰 {L['my_earnings']}: Rs. {member['Earnings']:,.1f}")
+            else:
+                st.error(L["search_no_user"])
