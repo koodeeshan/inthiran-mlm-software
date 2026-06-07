@@ -83,21 +83,4 @@ def register_new_member(username, password, sponsor_name):
     cursor.execute("SELECT Name FROM network WHERE Name = ?", (username,))
     if cursor.fetchone():
         conn.close()
-        return False, "⚠️ இந்த பெயர் ஏற்கனவே நெட்வொர்க்கில் உள்ளது நண்பா!"
-    
-    short_id = "GAK" + str(uuid.uuid4().int)[:4]
-    cursor.execute("INSERT INTO network VALUES (?, ?, ?, 0.0, 0.0, ?)", (username, password, sponsor_name, short_id))
-    conn.commit()
-    conn.close()
-    return True, f"🎉 பதிவு வெற்றி! உங்கள் ரெஃபரல் ஐடி: {short_id}"
-
-
-# --- இணையதள வடிவமைப்பு (Colorful UI) ---
-
-# லாகின் செய்யாத போது காட்டும் திரை
-if st.session_state.logged_in_user is None:
-    st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>💰 G A K Smart Marketing</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #666;'>Private Limited | MLM Business Portal</p>", unsafe_allow_html=True)
-    st.write("---")
-    
-    tab1, tab2 = st.tabs(
+        return False
