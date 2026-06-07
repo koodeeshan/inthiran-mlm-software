@@ -2,16 +2,16 @@ import streamlit as st
 import pandas as pd
 import uuid
 
-# 1. பக்கத்தின் தலைப்பு மற்றும் லேஅவுட் அமைத்தல்
-st.set_page_config(page_title="A K G Smart Commission Marketing Pvt Ltd", page_icon="💰", layout="centered")
+# 1. பக்கத்தின் தலைப்பு மற்றும் லேஅவுட் அமைத்தல் (புதிய பெயர் மாற்றத்துடன்)
+st.set_page_config(page_title="G A K Smart Marketing Private Limited", page_icon="💰", layout="centered")
 
 # 2. தரவுகளைச் சேமிப்பதற்கான சிஸ்டம் (Session State & Local Storage Simulation)
 if 'network_data' not in st.session_state:
     # ஆரம்பக்கட்ட உறுப்பினர்கள் விவரம்
     initial_data = [
-        {"Name": "Inthiran", "Password": "123", "Sponsor": "None", "Sales": 0.0, "Earnings": 0.0, "Unique_ID": "AKG001"},
-        {"Name": "Anand", "Password": "123", "Sponsor": "Inthiran", "Sales": 0.0, "Earnings": 0.0, "Unique_ID": "AKG002"},
-        {"Name": "Bala", "Password": "123", "Sponsor": "Anand", "Sales": 0.0, "Earnings": 0.0, "Unique_ID": "AKG003"}
+        {"Name": "Inthiran", "Password": "123", "Sponsor": "None", "Sales": 0.0, "Earnings": 0.0, "Unique_ID": "GAK001"},
+        {"Name": "Anand", "Password": "123", "Sponsor": "Inthiran", "Sales": 0.0, "Earnings": 0.0, "Unique_ID": "GAK002"},
+        {"Name": "Bala", "Password": "123", "Sponsor": "Anand", "Sales": 0.0, "Earnings": 0.0, "Unique_ID": "GAK003"}
     ]
     st.session_state.network_data = pd.DataFrame(initial_data)
 
@@ -20,7 +20,7 @@ if 'logged_in_user' not in st.session_state:
 
 df_net = st.session_state.network_data
 
-# 3. புதிய விற்பனை மற்றும் கமிஷன் பிரிப்பு ஃபங்க்ஷன் (자동 கமிஷன் சிஸ்டம்)
+# 3. புதிய销售 மற்றும் கமிஷன் பிரிப்பு ஃபங்க்ஷன்
 def add_sale_and_distribute(sales_person, amount):
     df = st.session_state.network_data.copy()
     
@@ -60,8 +60,8 @@ def register_new_member(username, password, sponsor_name):
     if username in df['Name'].values:
         return False, "⚠️ இந்த பெயர் ஏற்கனவே நெட்வொர்க்கில் உள்ளது நண்பா!"
     
-    # தனித்துவமான புதிய ரெஃபரல் ஐடி (Unique ID) உருவாக்குதல்
-    short_id = "AKG" + str(uuid.uuid4().int)[:4]
+    # தனித்துவமான புதிய ரெஃபரல் ஐடி (Unique ID - GAK என்று தொடங்கும்)
+    short_id = "GAK" + str(uuid.uuid4().int)[:4]
     
     new_row = {
         "Name": username,
@@ -81,7 +81,7 @@ def register_new_member(username, password, sponsor_name):
 
 # லாகின் செய்யாத போது காட்டும் திரை
 if st.session_state.logged_in_user is None:
-    st.title("💰 A K G Smart MLM Portal")
+    st.title("💰 G A K Smart Marketing Private Limited")
     st.write("---")
     
     tab1, tab2 = st.tabs(["🔐 லாகின் (Login)", "📝 புதிய பதிவு (Sign Up)"])
@@ -127,7 +127,7 @@ else:
     user_info = df_net[df_net['Name'] == current_user].iloc[0]
     
     st.title(f"👋 வணக்கம், {current_user}!")
-    st.write("**A K G Smart Commission Marketing Pvt Ltd**")
+    st.subheader("G A K Smart Marketing Private Limited")
     
     if st.button("🚪 லாக்-அவுட் (Logout)"):
         st.session_state.logged_in_user = None
@@ -169,4 +169,3 @@ else:
     else:
         for idx, row in downlines.iterrows():
             st.warning(f"👤 **{row['Name']}** | ஐடி: {row['Unique_ID']} | மொத்த விற்பனை: Rs.{row['Sales']} | வருமானம்: Rs.{row['Earnings']}")
-         
