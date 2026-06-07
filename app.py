@@ -1,47 +1,52 @@
 import streamlit as st
 import pandas as pd
+import uuid
 
 # 1. பக்கத்தின் தலைப்பு மற்றும் லேஅவுட் அமைத்தல்
 st.set_page_config(page_title="A K G Smart Commission Marketing Pvt Ltd", page_icon="💰", layout="centered")
 
-# 2. கூகுள் சீட்டை CSV வடிவில் நேரடியாகப் படிக்கும் எளிய முகவரி
-# (இதன் மூலம் பர்மிஷன் சிக்கல்கள் முற்றிலும் தவிர்க்கப்படும்)
+# 2. கூகுள் சீட் CSV முகவரி (தரவுகளைப் படிக்க மட்டும்)
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1uu7CfjOA4ISDSQKxPVQCLDZufJummYbkMsFnjwWvvWc/export?format=csv"
 
-# 3. தரவுகளைப் படிக்கும் ஃபங்க்ஷன்
+# 3. தரவுகளை லோடு செய்யும் ஃபங்க்ஷன்
 def load_data():
     try:
-        # கூகுள் சீட்டை ஆன்லைனில் இருந்து நேரடியாகப் படிக்கிறது
         df = pd.read_csv(SHEET_CSV_URL)
-        # தூண்கள் (Columns) சரியாக இருப்பதை உறுதி செய்தல்
-        required_cols = ['Name', 'Sponsor', 'Sales', 'Earnings']
-        if not all(col in df.columns for col in required_cols):
-            raise Exception("Columns mismatch")
+        # புதிய சிஸ்டத்திற்குத் தேவையான தூண்கள் (Columns) உள்ளனவா எனச் சரிபார்த்தல்
+        required_cols = ['Name', 'Password', 'Sponsor', 'Sales', 'Earnings', 'Unique_ID']
+        for col in required_cols:
+            if col not in df.columns:
+                df[col] = 0 if col in ['Sales', 'Earnings'] else "None"
         return df
-    except Exception as e:
-        # ஆன்லைனில் படிக்க முடியாவிட்டால் காட்டப்படும் ஆரம்பக்கட்ட உள்ளூர் தரவு
+    except Exception:
+        # ஆன்லைனில் படிக்க முடியாவிட்டால் காட்டப்படும் ஆரம்பக்கட்ட பாதுகாப்பான தரவு
         initial_data = [
-            {"Name": "Inthiran", "Sponsor": "None", "Sales": 0, "Earnings": 0},
-            {"Name": "Anand", "Sponsor": "Inthiran", "Sales": 0, "Earnings": 0},
-            {"Name": "Bala", "Sponsor": "Anand", "Sales": 0, "Earnings": 0}
+            {"Name": "Inthiran", "Password": "123", "Sponsor": "None", "Sales": 0, "Earnings": 0, "Unique_ID": "AKG001"},
+            {"Name": "Anand", "Password": "123", "Sponsor": "Inthiran", "Sales": 0, "Earnings": 0, "Unique_ID": "AKG002"},
+            {"Name": "Bala", "Password": "123", "Sponsor": "Anand", "Sales": 0, "Earnings": 0, "Unique_ID": "AKG003"}
         ]
         return pd.DataFrame(initial_data)
 
-# தரவை லோடு செய்தல்
+# செஷன் ஸ்டேட்டில் தரவைச் சேமித்தல்
 if 'network' not in st.session_state:
     st.session_state.network = load_data()
 
-# 4. புதிய விற்பனை மற்றும் கமிஷன் பிரிப்பு
+if 'logged_in_user' not in st.session_state:
+    st.session_state.logged_in_user = None
+
+df_net = st.session_state.network
+
+# 4. புதிய விற்பனை மற்றும் கமிஷன் தானாகப் பிரியும் ஃபங்க்ஷன்
 def add_sale_and_distribute(sales_person, amount):
     df = st.session_state.network.copy()
     
-    # நேரடி விற்பனையாளருக்கு கூட்டுதல்
+    # விற்பனை செய்தவருக்கு கூட்டுதல்
     df.loc[df['Name'] == sales_person, 'Sales'] += amount
     df.loc[df['Name'] == sales_person, 'Earnings'] += amount
     
     current_person = sales_person
     level = 1
-    commission_rates = {1: 0.50, 2: 0.30}
+    commission_rates = {1: 0.50, 2: 0.30} # லெவல் 1: 50%, லெவல் 2: 30%
     
     while True:
         sponsor_row = df[df['Name'] == current_person]
@@ -56,6 +61,7 @@ def add_sale_and_distribute(sales_person, amount):
             commission_amount = amount * commission_rates[level]
             df.loc[df['Name'] == sponsor_name, 'Earnings'] += commission_amount
         else:
+            # மெயின் பாஸ் (Inthiran)-க்கு செல்லும் ராயல்டி கமிஷன்
             if sponsor_name == "Inthiran":
                 df.loc[df['Name'] == sponsor_name, 'Earnings'] += (amount * 0.20)
                 
@@ -64,60 +70,117 @@ def add_sale_and_distribute(sales_person, amount):
         
     st.session_state.network = df
 
-# 5. புதிய நபரைச் சேர்த்தல்
-def add_new_member(name, sponsor):
+# 5. புதிய நபர் சைன்-அப் / ரெஃபரல் மூலம் இணையும் ஃபங்க்ஷன்
+def register_new_member(username, password, sponsor_name):
     df = st.session_state.network.copy()
-    if name in df['Name'].values:
-        st.error(f"⚠️ '{name}' என்ற பெயர் ஏற்கனவே நெட்வொர்க்கில் உள்ளது நண்பா!")
-        return False
-        
-    new_row = {"Name": name, "Sponsor": sponsor, "Sales": 0, "Earnings": 0}
+    if username in df['Name'].values:
+        return False, "⚠️ இந்த பெயர் ஏற்கனவே உள்ளது நண்பா!"
+    
+    # தனித்துவமான ரெஃபரல் ஐடி உருவாக்குதல்
+    short_id = "AKG" + str(uuid.uuid4().int)[:4]
+    
+    new_row = {
+        "Name": username,
+        "Password": password,
+        "Sponsor": sponsor_name,
+        "Sales": 0,
+        "Earnings": 0,
+        "Unique_ID": short_id
+    }
+    
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
     st.session_state.network = df
-    return True
+    return True, f"🎉 வெற்றி! உங்கள் ரெஃபரல் ஐடி: {short_id}"
 
-# --- இணையதள வடிவமைப்பு (UI Design) ---
-st.title("💰 A K G Smart Commission Marketing Pvt Ltd")
-st.write("---")
-
-st.sidebar.header("🛠️ நிர்வாகக் கட்டுப்பாடுகள்")
-
-st.sidebar.subheader("👤 புதிய உறுப்பினரைச் சேர்")
-new_name = st.sidebar.text_input("உறுப்பினர் பெயர்:")
-sponsor_list = st.session_state.network['Name'].tolist()
-selected_sponsor = st.sidebar.selectbox("ஸ்பான்சர் (அறிமுகப்படுத்துபவர்):", sponsor_list)
-
-if st.sidebar.button("உறுப்பினரை இணைக்கவும்"):
-    if new_name.strip() != "":
-        if add_new_member(new_name.strip(), selected_sponsor):
-            st.sidebar.success(f"🎉 {new_name} வெற்றிகரமாகச் சேர்க்கப்பட்டார்!")
-            st.rerun()
-    else:
-        st.sidebar.warning("தயவுசெய்து பெயரை டைப் செய்யவும் நண்பா!")
-
-st.sidebar.write("---")
-
-st.sidebar.subheader("📈 புதிய விற்பனைப் பதிவு")
-active_members = st.session_state.network['Name'].tolist()
-selected_seller = st.sidebar.selectbox("விற்பனை செய்தவர்:", active_members)
-sale_amount = st.sidebar.number_input("விற்பனைத் தொகை (Rs.):", min_value=10.0, step=10.0, value=100.0)
-
-if st.sidebar.button("விற்பனையைச் சேர் (கமிஷன் பிரி)"):
-    add_sale_and_distribute(selected_seller, sale_amount)
-    st.sidebar.success(f"🔥 Rs.{sale_amount} கமிஷன் பிரித்தளிக்கப்பட்டது!")
-    st.rerun()
-
-st.header("👥 நபர்களின் தற்போதைய வருமானம்")
-
-for index, row in st.session_state.network.iterrows():
-    name = row['Name']
-    sponsor = row['Sponsor']
-    sales = row['Sales']
-    earnings = row['Earnings']
+# --- லாகின் ஸ்கிரீன் வடிவமைப்பு ---
+if st.session_state.logged_in_user is None:
+    st.title("💰 A K G Smart MLM Portal")
+    st.write("---")
     
-    if sponsor == "None":
-        identity = f"**{name}** (Main Boss)"
-    else:
-        identity = f"**{name}** (Sponsor: {sponsor})"
+    tab1, tab2 = st.tabs(["🔐 லாகின் (Login)", "📝 புதிய பதிவு (Sign Up)"])
+    
+    with tab1:
+        st.subheader("உங்கள் கணக்கில் நுழையவும்")
+        login_user = st.text_input("பயனர் பெயர் (Username):", key="login_u")
+        login_pass = st.text_input("கடவுச்சொல் (Password):", type="password", key="login_p")
         
-    st.info(f"👤 {identity} | **மொத்த விற்பனை:** Rs.{sales:,.1f} | 💰 **மொத்த வருமானம்:** Rs.{earnings:,.1f}")
+        if st.button("உள்நுழைக (Login)"):
+            user_row = df_net[(df_net['Name'] == login_user) & (df_net['Password'].astype(str) == str(login_pass))]
+            if not user_row.empty:
+                st.session_state.logged_in_user = login_user
+                st.success(f"வரவேற்கிறோம் {login_user} நண்பா!")
+                st.rerun()
+            else:
+                st.error("❌ தவறான பயனர் பெயர் அல்லது கடவுச்சொல்!")
+                
+    with tab2:
+        st.subheader("புதிய உறுப்பினரை இணைக்கவும்")
+        reg_user = st.text_input("புதிய நபர் பெயர்:", key="reg_u")
+        reg_pass = st.text_input("புதிய கடவுச்சொல் உருவாக்குங்கள்:", type="password", key="reg_p")
+        
+        # ரெஃபரல் கொடுப்பதற்காக ஏற்கனவே இருக்கும் மெம்பர்களின் பட்டியல்
+        all_sponsors = df_net['Name'].tolist()
+        selected_sponsor = st.selectbox("அறிமுகப்படுத்துபவர் (Sponsor Name):", all_sponsors)
+        
+        if st.button("பதிவு செய்க (Register)"):
+            if reg_user.strip() != "" and reg_pass.strip() != "":
+                success, msg = register_new_member(reg_user.strip(), reg_pass.strip(), selected_sponsor)
+                if success:
+                    st.success(msg)
+                    st.balloons()
+                else:
+                    st.error(msg)
+            else:
+                st.warning("தயவுசெய்து அனைத்து விபரங்களையும் நிரப்பவும் நண்பா!")
+
+# --- லாகின் செய்த பின் காட்டும் மெம்பர் டேஷ்போர்டு (Sun-Locking Dashboard) ---
+else:
+    current_user = st.session_state.logged_in_user
+    user_info = df_net[df_net['Name'] == current_user].iloc[0]
+    
+    # ஹேடர் பகுதி
+    st.title(f"👋 வணக்கம், {current_user}!")
+    st.subheader("A K G Smart Commission Marketing Pvt Ltd")
+    
+    if st.button("🚪 லாக்-அவுட் (Logout)"):
+        st.session_state.logged_in_user = None
+        st.rerun()
+        
+    st.write("---")
+    
+    # மெம்பரின் தனிப்பட்ட டேஷ்போர்டு (யாரும் இதை மாற்ற முடியாது - Sun Locked)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric(label="🆔 உங்கள் ரெஃபரல் ஐடி", value=str(user_info['Unique_ID']))
+    with col2:
+        st.metric(label="📈 உங்கள் சொந்த விற்பனை", value=f"Rs.{user_info['Sales']:,}")
+    with col3:
+        st.metric(label="💰 மொத்த வருமானம் (Earnings)", value=f"Rs.{user_info['Earnings']:,}")
+        
+    st.write("---")
+    
+    # புதிய விற்பனை பதிவு செய்யும் பகுதி (அவரவர் கணக்கில் இருந்து அவர்களே விற்பனை போடலாம்)
+    st.header("🛒 புதிய விற்பனைப் பதிவு")
+    sale_amount = st.number_input("விற்பனைத் தொகை (Rs.):", min_value=10.0, step=10.0, value=100.0)
+    
+    if st.button("விற்பனையை உறுதிசெய் (கமிஷன் பிரி)"):
+        add_sale_and_distribute(current_user, sale_amount)
+        st.success(f"🔥 Rs.{sale_amount} க்கான விற்பனைப் பதிவு செய்யப்பட்டது! கமிஷன் அப்லைனர்களுக்குப் பிரித்தளிக்கப்பட்டது.")
+        st.rerun()
+        
+    st.write("---")
+    
+    # நெட்வொர்க் ட்ரீ (டீம் விபரங்கள் பார்க்கும் பகுதி)
+    st.header("👥 உங்கள் நெட்வொர்க் டீம் விபரங்கள்")
+    
+    # லாகின் செய்த நபருக்குக் கீழே இருப்பவர்களை (Downlines) மட்டும் காட்டும் செக்யூரிட்டி சிஸ்டம்
+    st.write(f"**உங்களை அறிமுகப்படுத்தியவர் (Sponsor):** {user_info['Sponsor']}")
+    
+    st.write("**உங்களுக்குக் கீழே உள்ள டீம் மெம்பர்கள்:**")
+    downlines = df_net[df_net['Sponsor'] == current_user]
+    
+    if downlines.empty:
+        st.info("உங்களுக்குக் கீழே இன்னும் நபர்கள் இணையவில்லை நண்பா. உங்கள் ரெஃபரல் ஐடியைப் பகிர்ந்து டீமை உருவாக்குங்கள்!")
+    else:
+        for idx, row in downlines.iterrows():
+            st.warning(f"👤 **{row['Name']}** | ஐடி: {row['Unique_ID']} | விற்பனை: Rs.{row['Sales']} | வருமானம்: Rs.{row['Earnings']}")
