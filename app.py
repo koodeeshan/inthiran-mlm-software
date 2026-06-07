@@ -195,4 +195,4 @@ else:
     else:
         for idx, row in downlines.iterrows():
             st.warning(f"👤 **{row['Name']}** | ஐடி: {row['Unique_ID']} | மொத்த விற்பனை: Rs.{row['Sales']} | வருமானம்: Rs.{row['Earnings']}")
-            
+    
