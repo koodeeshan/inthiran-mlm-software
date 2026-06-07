@@ -8,7 +8,6 @@ st.set_page_config(page_title="G A K Smart Marketing Private Limited", page_icon
 
 # --- நிரந்தர டேட்டாபேஸ் சிஸ்டம் (Updated Database Name for Reset) ---
 def init_db():
-    # முரண்பாடுகளைத் தவிர்க்க புதிய பெயரில் டேட்டாபேஸ் உருவாக்கப்படுகிறது
     conn = sqlite3.connect('gak_marketing_v2.db', check_same_thread=False)
     cursor = conn.cursor()
     cursor.execute('''
@@ -43,6 +42,7 @@ def get_network_df():
 if 'logged_in_user' not in st.session_state:
     st.session_state.logged_in_user = None
 
+# ஆரம்ப தரவை எடுத்தல்
 df_net = get_network_df()
 
 # கமிஷன் விநியோக முறை
@@ -140,6 +140,8 @@ if st.session_state.logged_in_user is None:
                 st.warning("தயவுசெய்து அனைத்து விபரங்களையும் நிரப்பவும் நண்பா!")
 
 else:
+    # லாகின் செய்த பின் தற்போதைய புதிய விபரங்களை மீண்டும் டேட்டாபேஸில் இருந்து எடுக்கிறோம்
+    df_net = get_network_df()
     current_user = st.session_state.logged_in_user
     user_info = df_net[df_net['Name'] == current_user].iloc[0]
     
@@ -188,4 +190,3 @@ else:
             with st.container(border=True):
                 st.write(f"👤 **பெயர்:** {row['Name']} | 🆔 **ஐடி:** {row['Unique_ID']}")
                 st.write(f"📊 **விற்பனை:** Rs.{row['Sales']:,} | 💰 **வருமானம்:** Rs.{row['Earnings']:,}")
-    
