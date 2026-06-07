@@ -201,7 +201,7 @@ if st.session_state.logged_in_user is None and not st.session_state.is_admin_log
                                    (r_user.strip(), r_pass.strip(), r_sponsor, short_id))
                     conn.commit()
                     conn.close()
-                    st.success("🎉 கணக்கு துவங்கப்பட்டது! நீங்கள் லாகின் செய்யலாம்.")
+                    st.success("🎉 கணக்கு துவங்கப்பட்டது நண்பா! இப்போது நீங்கள் லாகின் செய்யலாம்.")
             else:
                 st.warning("⚠️ விபரங்களை நிரப்பவும் நண்பா!")
 
