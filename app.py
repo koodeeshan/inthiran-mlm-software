@@ -41,4 +41,181 @@ LANG_DICT = {
         "reg_sponsor": "அறிமுகப்படுத்துபவர் (Sponsor Name):",
         "btn_register": "🚀 கணக்கைத் துவங்கு (Open Account)",
         "logout": "🚪 லாக்-அவுட்",
-        "welcome": "
+        "welcome": "👋 வணக்கம், ",
+        "menu_dash": "📊 டேஷாபோர்டு",
+        "menu_with": "💰 பணம் வித்ரா",
+        "menu_tree": "🌲 நெட்வொர்க்",
+        "menu_search": "🔍 தேடல்",
+        "ref_id": "🆔 ரெஃபரல் ஐடி",
+        "my_sales": "📈 சொந்த விற்பனை",
+        "my_earnings": "💰 மொத்த வருமானம்",
+        "ref_link_lbl": "🔗 உங்கள் ரெஃபரல் லிங்க் (இதனைப் பகிருங்கள்):",
+        "status_lbl": "⚡ கணக்கு நிலை (Account Status):"
+    },
+    "English": {
+        "title": "💰 G A K Smart Marketing",
+        "caption": "Private Limited | Global MLM Business Portal",
+        "tab_login": "🔐 Login",
+        "tab_signup": "📝 Free Sign Up",
+        "username": "Username / Phone / Email:",
+        "password": "Password:",
+        "btn_login": "🚀 Login",
+        "login_err": "❌ Invalid username or password!",
+        "reg_title": "🤝 Create a Free Account",
+        "reg_user_lbl": "Username (You can use Name, Phone or Email):",
+        "reg_pass": "Create Password:",
+        "reg_sponsor": "Sponsor Name:",
+        "btn_register": "🚀 Open Account",
+        "logout": "🚪 Logout",
+        "welcome": "👋 Welcome, ",
+        "menu_dash": "📊 Dashboard",
+        "menu_with": "💰 Withdrawal",
+        "menu_tree": "🌲 Network Tree",
+        "menu_search": "🔍 Search",
+        "ref_id": "Referral ID",
+        "my_sales": "📈 Personal Sales",
+        "my_earnings": "💰 Total Earnings",
+        "ref_link_lbl": "🔗 Your Referral Link:",
+        "status_lbl": "⚡ Account Status:"
+    }
+}
+
+def get_package_commission_details(pkg_value):
+    if pkg_value in [5, 10]: rate = 10
+    elif pkg_value in [20, 40, 50]: rate = 12
+    elif pkg_value in [80, 100, 150]: rate = 15
+    elif pkg_value in [250, 500]: rate = 18
+    elif pkg_value in [1000]: rate = 20
+    else: rate = 0
+    return rate, (pkg_value * rate) / 100
+
+def init_db():
+    conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS network (
+            Name TEXT UNIQUE, Email TEXT, Phone TEXT, Password TEXT,
+            Sponsor TEXT, Sales REAL, Earnings REAL, Unique_ID TEXT,
+            Language TEXT DEFAULT 'தமிழ்', Package REAL DEFAULT 0, 
+            Status TEXT DEFAULT 'Free Account', Bank_Account TEXT, ID_Passport TEXT
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS withdrawals (
+            ID TEXT PRIMARY KEY, Name TEXT, Amount REAL, Method TEXT, Status TEXT
+        )
+    ''')
+    conn.commit()
+    
+    cursor.execute("SELECT COUNT(*) FROM network WHERE Name='Inthiran'")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT INTO network VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", 
+                       ('Inthiran', 'inthiran@gak.com', '0771112223', '123', 'None', 0.0, 0.0, 'GAK001', 'English', 1000, 'Active', 'BOC 123456', 'NIC99001122'))
+        conn.commit()
+    conn.close()
+
+init_db()
+
+def get_network_df():
+    conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+    df = pd.read_sql_query("SELECT * FROM network", conn)
+    conn.close()
+    return df
+
+def activate_user_business(username):
+    conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT Sponsor, Package FROM network WHERE Name = ?", (username,))
+    res = cursor.fetchone()
+    if res:
+        sponsor, package = res
+        cursor.execute("UPDATE network SET Status = 'Active' WHERE Name = ?", (username,))
+        
+        if sponsor and sponsor != "None":
+            _, comm_to_pay = get_package_commission_details(package)
+            cursor.execute("UPDATE network SET Sales = Sales + ?, Earnings = Earnings + ? WHERE Name = ?", (package, comm_to_pay, sponsor))
+            
+        conn.commit()
+    conn.close()
+
+if 'logged_in_user' not in st.session_state: st.session_state.logged_in_user = None
+if 'current_lang' not in st.session_state: st.session_state.current_lang = "தமிழ்"
+if 'is_admin_logged' not in st.session_state: st.session_state.is_admin_logged = False
+
+query_params = st.query_params
+url_ref = query_params.get("ref", "")
+
+df_net = get_network_df()
+
+# --- 🌍 வலது மேல் மூலையில் மொழித் தேர்வு (Language Selector) ---
+lang_col1, lang_col2 = st.columns([4, 1])
+with lang_col2:
+    available_langs = ["தமிழ்", "English"]
+    saved_lang_idx = available_langs.index(st.session_state.current_lang)
+    chosen_lang = st.selectbox("🌐 Language", available_langs, index=saved_lang_idx, label_visibility="collapsed")
+    if chosen_lang != st.session_state.current_lang:
+        st.session_state.current_lang = chosen_lang
+        if st.session_state.logged_in_user:
+            conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+            cursor = conn.cursor()
+            cursor.execute("UPDATE network SET Language=? WHERE Name=?", (chosen_lang, st.session_state.logged_in_user))
+            conn.commit()
+            conn.close()
+        st.rerun()
+
+L = LANG_DICT[st.session_state.current_lang]
+
+# --- UI வடிவமைப்பு ---
+
+if st.session_state.logged_in_user is None and not st.session_state.is_admin_logged:
+    st.title(L["title"])
+    st.caption(L["caption"])
+    st.write("---")
+    
+    tab1, tab2 = st.tabs([L["tab_login"], L["tab_signup"]])
+    
+    with tab1:
+        login_user = st.text_input(L["username"], key="l_user")
+        login_pass = st.text_input(L["password"], type="password", key="l_pass")
+        
+        if st.button(L["btn_login"], use_container_width=True):
+            if login_user.strip() == "gak smart marketing private limited" and login_pass.strip() == "0771057786":
+                st.session_state.is_admin_logged = True
+                st.rerun()
+            else:
+                user_row = df_net[(df_net['Name'] == login_user) & (df_net['Password'].astype(str) == str(login_pass))]
+                if not user_row.empty:
+                    st.session_state.logged_in_user = login_user
+                    st.session_state.current_lang = user_row.iloc[0]['Language']
+                    st.rerun()
+                else:
+                    st.error(L["login_err"])
+                    
+    with tab2:
+        st.subheader(L["reg_title"])
+        all_sponsors = df_net['Name'].tolist()
+        default_sponsor_idx = 0
+        if url_ref and url_ref in all_sponsors:
+            default_sponsor_idx = all_sponsors.index(url_ref)
+            st.success(f"🔗 Referred by: **{url_ref}**")
+            
+        r_user = st.text_input(L["reg_user_lbl"], placeholder="Siva / 0771234567")
+        r_pass = st.text_input(L["reg_pass"], type="password", key="reg_p_field")
+        r_sponsor = st.selectbox(L["reg_sponsor"], all_sponsors, index=default_sponsor_idx)
+        
+        if st.button(L["btn_register"], use_container_width=True):
+            if r_user.strip() and r_pass.strip():
+                conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+                cursor = conn.cursor()
+                cursor.execute("SELECT Name FROM network WHERE Name = ?", (r_user.strip(),))
+                if cursor.fetchone():
+                    st.error("⚠️ இந்த பெயர் ஏற்கனவேப் பயன்பாட்டில் உள்ளது!")
+                    conn.close()
+                else:
+                    short_id = "GAK" + str(uuid.uuid4().int)[:4]
+                    cursor.execute("INSERT INTO network VALUES (?, '', '', ?, ?, 0.0, 0.0, ?, 'தமிழ்', 0, 'Free Account', '', '')",
+                                   (r_user.strip(), r_pass.strip(), r_sponsor, short_id))
+                    conn.commit()
+                    conn.close()
+                    st.success("🎉 கணக்கு து
