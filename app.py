@@ -7,7 +7,7 @@ import os
 # 1. பக்கத்தின் வடிவமைப்பு
 st.set_page_config(page_title="G A K Smart Marketing Private Limited", page_icon="💰", layout="centered")
 
-DB_NAME = 'gak_marketing_v6.db'
+DB_NAME = 'gak_marketing_v7.db'
 UPLOAD_DIR = 'uploaded_receipts'
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
@@ -18,20 +18,16 @@ LANG_DICT = {
         "title": "💰 G A K Smart Marketing",
         "caption": "Private Limited | சர்வதேச MLM பிசினஸ் போர்ட்டல்",
         "tab_login": "🔐 லாகின் (Login)",
-        "tab_signup": "📝 புதிய பதிவு (Sign Up)",
-        "username": "பயனர் பெயர் (Username):",
+        "tab_signup": "📝 இலவசப் பதிவு (Free Sign Up)",
+        "username": "பயனர் பெயர் / போன் / Email (Username):",
         "password": "கடவுச்சொல் (Password):",
         "btn_login": "🚀 உள்நுழைக",
         "login_err": "❌ தவறான பயனர் பெயர் அல்லது கடவுச்சொல்!",
-        "login_success": "🎉 வெற்றிகரமாக உள்நுழைந்துவிட்டீர்கள்!",
-        "reg_title": "🤝 புதிய உறுப்பினராக இணையுங்கள்",
-        "reg_name": "உங்கள் முழுப் பெயர்:",
-        "reg_email": "மின்னஞ்சல் முகவரி (Email):",
-        "reg_phone": "தொலைபேசி இலக்கம் (Phone):",
+        "reg_title": "🤝 புதிய கணக்கைத் துவங்குங்கள் (இலவசம்)",
+        "reg_user_lbl": "பயனர் பெயர் (பெயர், போன் அல்லது Email பயன்படுத்தலாம்):",
         "reg_pass": "புதிய கடவுச்சொல் (Password):",
         "reg_sponsor": "அறிமுகப்படுத்துபவர் (Sponsor Name):",
-        "reg_pkg": "📦 வியாபாரத் தொகுப்பைத் தெரிவு செய்க ($):",
-        "btn_register": "✅ விண்ணப்பத்தை சமர்ப்பிக்கவும்",
+        "btn_register": "🚀 கணக்கைத் துவங்கு (Open Account)",
         "logout": "🚪 லாக்-அவுட்",
         "welcome": "👋 வணக்கம், ",
         "menu_dash": "📊 டேஷாபோர்டு",
@@ -41,55 +37,45 @@ LANG_DICT = {
         "ref_id": "🆔 ரெஃபரல் ஐடி",
         "my_sales": "📈 சொந்த விற்பனை",
         "my_earnings": "💰 மொத்த வருமானம்",
-        "ref_link_lbl": "🔗 உங்கள் ரெஃபரல் லிங்க் (இதனைப் பகிருங்கள்):"
+        "ref_link_lbl": "🔗 உங்கள் ரெஃபரல் லிங்க் (இதனைப் பகிருங்கள்):",
+        "status_lbl": "⚡ கணக்கு நிலை (Account Status):"
     },
     "English": {
         "title": "💰 G A K Smart Marketing",
         "caption": "Private Limited | Global MLM Business Portal",
         "tab_login": "🔐 Login",
-        "tab_signup": "📝 Sign Up",
-        "username": "Username:",
+        "tab_signup": "📝 Free Sign Up",
+        "username": "Username / Phone / Email:",
         "password": "Password:",
         "btn_login": "🚀 Login",
         "login_err": "❌ Invalid username or password!",
-        "login_success": "🎉 Successfully logged in!",
-        "reg_title": "🤝 Join as a New Member",
-        "reg_name": "Full Name:",
-        "reg_email": "Email Address:",
-        "reg_phone": "Phone Number:",
+        "reg_title": "🤝 Create a Free Account",
+        "reg_user_lbl": "Username (You can use Name, Phone or Email):",
         "reg_pass": "Create Password:",
         "reg_sponsor": "Sponsor Name:",
-        "reg_pkg": "📦 Select Business Package ($):",
-        "btn_register": "✅ Submit Registration",
+        "btn_register": "🚀 Open Account",
         "logout": "🚪 Logout",
         "welcome": "👋 Welcome, ",
         "menu_dash": "📊 Dashboard",
         "menu_with": "💰 Withdrawal",
         "menu_tree": "🌲 Network Tree",
         "menu_search": "🔍 Search",
-        "ref_id": "🆔 Referral ID",
+        "ref_id": "Referral ID",
         "my_sales": "📈 Personal Sales",
         "my_earnings": "💰 Total Earnings",
-        "ref_link_lbl": "🔗 Your Referral Link (Share this):"
+        "ref_link_lbl": "🔗 Your Referral Link:",
+        "status_lbl": "⚡ Account Status:"
     }
 }
 
-# கமிஷன் வீதம் மற்றும் தொகையைக் கணக்கிடும் பங்க்ஷன்
 def get_package_commission_details(pkg_value):
-    if pkg_value in [5, 10]:
-        rate = 10
-    elif pkg_value in [20, 40, 50]:
-        rate = 12
-    elif pkg_value in [80, 100, 150]:
-        rate = 15
-    elif pkg_value in [250, 500]:
-        rate = 18
-    elif pkg_value in [1000]:
-        rate = 20
-    else:
-        rate = 0
-    comm_amount = (pkg_value * rate) / 100
-    return rate, comm_amount
+    if pkg_value in [5, 10]: rate = 10
+    elif pkg_value in [20, 40, 50]: rate = 12
+    elif pkg_value in [80, 100, 150]: rate = 15
+    elif pkg_value in [250, 500]: rate = 18
+    elif pkg_value in [1000]: rate = 20
+    else: rate = 0
+    return rate, (pkg_value * rate) / 100
 
 def init_db():
     conn = sqlite3.connect(DB_NAME, check_same_thread=False)
@@ -98,13 +84,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS network (
             Name TEXT UNIQUE, Email TEXT, Phone TEXT, Password TEXT,
             Sponsor TEXT, Sales REAL, Earnings REAL, Unique_ID TEXT,
-            Language TEXT DEFAULT 'தமிழ்', Package REAL DEFAULT 0, Status TEXT DEFAULT 'Active'
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS pending_users (
-            ID TEXT PRIMARY KEY, Name TEXT, Email TEXT, Phone TEXT, Password TEXT,
-            Sponsor TEXT, Package REAL, Receipt_Path TEXT, Status TEXT DEFAULT 'Pending'
+            Language TEXT DEFAULT 'தமிழ்', Package REAL DEFAULT 0, 
+            Status TEXT DEFAULT 'Free Account', Bank_Account TEXT, ID_Passport TEXT
         )
     ''')
     cursor.execute('''
@@ -114,10 +95,10 @@ def init_db():
     ''')
     conn.commit()
     
-    cursor.execute("SELECT COUNT(*) FROM network")
+    cursor.execute("SELECT COUNT(*) FROM network WHERE Name='Inthiran'")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO network VALUES (?,?,?,?,?,?,?,?,?,?,?)", ('Inthiran', 'inthiran@gak.com', '0771112223', '123', 'None', 0.0, 0.0, 'GAK001', 'English', 1000, 'Active'))
-        cursor.execute("INSERT INTO network VALUES (?,?,?,?,?,?,?,?,?,?,?)", ('Anand', 'anand@gak.com', '0774445556', '123', 'Inthiran', 0.0, 0.0, 'GAK002', 'English', 100, 'Active'))
+        cursor.execute("INSERT INTO network VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", 
+                       ('Inthiran', 'inthiran@gak.com', '0771112223', '123', 'None', 0.0, 0.0, 'GAK001', 'English', 1000, 'Active', 'BOC 123456', 'NIC99001122'))
         conn.commit()
     conn.close()
 
@@ -129,40 +110,30 @@ def get_network_df():
     conn.close()
     return df
 
-# அட்மின் ஒப்புதல் அளித்த பின் கமிஷன் அப்லைனருக்குச் செல்லும் பங்க்ஷன்
-def approve_user_and_pay_commission(pending_id):
+# அட்மின் Approve செய்த பின் கணக்கு Active ஆக மாறும்
+def activate_user_business(username):
     conn = sqlite3.connect(DB_NAME, check_same_thread=False)
     cursor = conn.cursor()
     
-    cursor.execute("SELECT Name, Email, Phone, Password, Sponsor, Package FROM pending_users WHERE ID = ?", (pending_id,))
+    cursor.execute("SELECT Sponsor, Package FROM network WHERE Name = ?", (username,))
     res = cursor.fetchone()
     if res:
-        name, email, phone, password, sponsor, package = res
-        short_id = "GAK" + str(uuid.uuid4().int)[:4]
+        sponsor, package = res
+        # 1. பயனரின் நிலையை Active ஆக மாற்றுதல்
+        cursor.execute("UPDATE network SET Status = 'Active' WHERE Name = ?", (username,))
         
-        # 1. புதிய நபரை மெம்பர் டேபிளில் இணைத்தல்
-        try:
-            cursor.execute("INSERT INTO network VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
-                           (name, email, phone, password, sponsor, package, 0.0, short_id, 'தமிழ்', package, 'Active'))
-        except sqlite3.IntegrityError:
-            return False, "பயனர் பெயர் ஏற்கனவே உள்ளது!"
-            
-        # 2. அப்லைனருக்கு (Sponsor) கmission வழங்குதல்
+        # 2. அப்லைனருக்கு கமிஷன் அனுப்புதல்
         if sponsor and sponsor != "None":
             _, comm_to_pay = get_package_commission_details(package)
             cursor.execute("UPDATE network SET Sales = Sales + ?, Earnings = Earnings + ? WHERE Name = ?", (package, comm_to_pay, sponsor))
             
-        # 3. நிலுவை அட்டவணையை மாற்றுதல்
-        cursor.execute("UPDATE pending_users SET Status = 'Approved' WHERE ID = ?", (pending_id,))
         conn.commit()
     conn.close()
-    return True, "வெற்றிகரமாக அப்ரூவ் செய்யப்பட்டு கமிஷன் அப்லைனருக்குச் சென்றடைந்தது!"
 
 if 'logged_in_user' not in st.session_state: st.session_state.logged_in_user = None
 if 'current_lang' not in st.session_state: st.session_state.current_lang = "தமிழ்"
 if 'is_admin_logged' not in st.session_state: st.session_state.is_admin_logged = False
 
-# URL இலிருந்து தானாக ரெஃபரல் ஐடியைப் படித்தல் (Auto Referral Check)
 query_params = st.query_params
 url_ref = query_params.get("ref", "")
 
@@ -197,54 +168,34 @@ if st.session_state.logged_in_user is None and not st.session_state.is_admin_log
                     
     with tab2:
         st.subheader(L["reg_title"])
-        
-        # ரெஃபரல் லிங்க் மூலம் வந்திருந்தால் ஸ்பான்சர் பெயர் தானாக லாக் ஆகும்
         all_sponsors = df_net['Name'].tolist()
         default_sponsor_idx = 0
         if url_ref and url_ref in all_sponsors:
             default_sponsor_idx = all_sponsors.index(url_ref)
             st.success(f"🔗 Referred by: **{url_ref}**")
             
-        r_name = st.text_input(L["reg_name"], placeholder="Siva")
-        r_email = st.text_input(L["reg_email"], placeholder="siva@gmail.com")
-        r_phone = st.text_input(L["reg_phone"], placeholder="077XXXXXXX")
-        r_pass = st.text_input(L["reg_pass"], type="password")
-        
+        r_user = st.text_input(L["reg_user_lbl"], placeholder="உதாரணம்: Siva / 0771234567 / siva@gmail.com")
+        r_pass = st.text_input(L["reg_pass"], type="password", key="reg_p_field")
         r_sponsor = st.selectbox(L["reg_sponsor"], all_sponsors, index=default_sponsor_idx)
         
-        # பேக்கேஜ் தெரிவு செய்தல்
-        packages = [5, 10, 20, 40, 50, 80, 100, 150, 250, 500, 1000]
-        selected_pkg = st.selectbox(L["reg_pkg"], packages)
-        
-        # கமிஷன் விபரங்களை நேரலையாகக் காட்டுதல்
-        pkg_rate, pkg_comm = get_package_commission_details(selected_pkg)
-        st.info(f"📊 இந்த தொகுப்பிற்கான கமிஷன் வீதம்: **{pkg_rate}%** | அப்லைனருக்குச் செல்லும் தொகை: **${pkg_comm}**")
-        
-        # ரசீது பதிவேற்றம்
-        uploaded_file = st.file_uploader("📸 பண ரசீதை இங்கே அப்லோடு செய்யவும் (Receipt Upload):", type=["png", "jpg", "jpeg"])
-        
         if st.button(L["btn_register"], use_container_width=True):
-            if r_name.strip() and r_email.strip() and r_phone.strip() and r_pass.strip() and uploaded_file:
+            if r_user.strip() and r_pass.strip():
                 conn = sqlite3.connect(DB_NAME, check_same_thread=False)
                 cursor = conn.cursor()
-                cursor.execute("SELECT Name FROM network WHERE Name = ?", (r_name.strip(),))
+                cursor.execute("SELECT Name FROM network WHERE Name = ?", (r_user.strip(),))
                 if cursor.fetchone():
-                    st.error("⚠️ இந்த பயனர் பெயர் ஏற்கனவே உள்ளது நண்பா!")
+                    st.error("⚠️ இந்த பெயர் ஏற்கனவேப் பயன்பாட்டில் உள்ளது!")
                     conn.close()
                 else:
-                    # ரசீதைச் சேமித்தல்
-                    file_path = os.path.join(UPLOAD_DIR, f"{r_name.strip()}_{uploaded_file.name}")
-                    with open(file_path, "wb") as f:
-                        f.write(uploaded_file.getbuffer())
-                    
-                    p_id = "PEND" + str(uuid.uuid4().int)[:4]
-                    cursor.execute("INSERT INTO pending_users VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Pending')",
-                                   (p_id, r_name.strip(), r_email.strip(), r_phone.strip(), r_pass.strip(), r_sponsor, selected_pkg, file_path))
+                    short_id = "GAK" + str(uuid.uuid4().int)[:4]
+                    # ஆரம்பத்தில் 'Free Account' ஆகப் பதியும் விபரங்கள்
+                    cursor.execute("INSERT INTO network VALUES (?, '', '', ?, ?, 0.0, 0.0, ?, 'தமிழ்', 0, 'Free Account', '', '')",
+                                   (r_user.strip(), r_pass.strip(), r_sponsor, short_id))
                     conn.commit()
                     conn.close()
-                    st.success("🎉 உங்கள் பதிவு அட்மினுக்கு அனுப்பப்பட்டுள்ளது! ரசீதைச் சரிபார்த்த பின்பு கணக்கு துவங்கப்படும் நண்பா.")
+                    st.success("🎉 கணக்கு துவங்கப்பட்டது நண்பா! இப்போது நீங்கள் லாகின் செய்து தளத்தைப் பார்க்கலாம்.")
             else:
-                st.warning("⚠️ தயவுசெய்து ரசீது உட்பட அனைத்து விபரங்களையும் பூர்த்தி செய்யவும் நண்பா!")
+                st.warning("⚠️ விபரங்களை நிரப்பவும் நண்பா!")
 
 # 👑 அட்மின் திரை
 elif st.session_state.is_admin_logged:
@@ -253,45 +204,36 @@ elif st.session_state.is_admin_logged:
         st.session_state.is_admin_logged = False; st.rerun()
         
     st.write("---")
-    adm_tab1, adm_tab2 = st.tabs(["📥 Pending Approvals (புதிய ரசீதுகள்)", "👥 Full Network & Ranks"])
+    adm_tab1, adm_tab2 = st.tabs(["📥 Pending verifications (Working -> Active)", "👥 Full Network DB"])
     
     with adm_tab1:
-        st.subheader("மெம்பர்களின் புதிய பதிவு மற்றும் ரசீது சரிபார்ப்பு")
-        conn = sqlite3.connect(DB_NAME, check_same_thread=False)
-        df_pending = pd.read_sql_query("SELECT * FROM pending_users WHERE Status = 'Pending'", conn)
-        conn.close()
+        st.subheader("Working நிலையில் உள்ள கணக்குகளின் சரிபார்ப்பு")
+        # 'Working' நிலையில் உள்ள மெம்பர்களை மட்டும் எடுத்தல்
+        df_working = df_net[df_net['Status'] == 'Working']
         
-        if df_pending.empty:
-            st.info("தற்போது சரிபார்ப்பிற்கு எந்தவொரு புதிய விண்ணப்பமும் நிலுவையில் இல்லை நண்பா!")
+        if df_working.empty:
+            st.info("தற்போது சரிபார்ப்பிற்கு எந்தவொரு கணக்கும் நிலுவையில் இல்லை நண்பா!")
         else:
-            for _, p_row in df_pending.iterrows():
+            for _, w_row in df_working.iterrows():
                 with st.container(border=True):
-                    st.subheader(f"👤 பயனர்: {p_row['Name']}")
-                    st.write(f"📧 **Email:** {p_row['Email']} | 📞 **Phone:** {p_row['Phone']}")
-                    st.write(f"📦 **தேர்ந்தெடுத்த பிசினஸ்:** ${p_row['Package']} | 🔗 **Sponsor:** {p_row['Sponsor']}")
+                    st.subheader(f"👤 பயனர் ஐடி: {w_row['Name']}")
+                    st.write(f"📧 **Email:** {w_row['Email']} | 📞 **Phone:** {w_row['Phone']}")
+                    st.write(f"🏦 **வங்கி கணக்கு:** {w_row['Bank_Account']}")
+                    st.write(f"🆔 **ID/பாஸ்போர்ட் இலக்கம்:** {w_row['ID_Passport']}")
+                    st.write(f"📦 **தேர்ந்தெடுத்த பிசினஸ்:** ${w_row['Package']} | 🔗 **Sponsor:** {w_row['Sponsor']}")
                     
                     # ரசீதுப் படம் காட்டுதல்
-                    if os.path.exists(p_row['Receipt_Path']):
-                        st.image(p_row['Receipt_Path'], caption="உறுப்பினர் அப்லோட் செய்த ரசீது", width=300)
+                    receipt_filename = os.path.join(UPLOAD_DIR, f"{w_row['Name']}_receipt.png")
+                    if os.path.exists(receipt_filename):
+                        st.image(receipt_filename, caption="பயனர் அப்லோட் செய்த சிலிப் (Slip)", width=300)
                     
-                    btn_col1, btn_col2 = st.columns(2)
-                    with btn_col1:
-                        if st.button(f"✅ Approve & Pay Commission ({p_row['ID']})", key=f"app_{p_row['ID']}", use_container_width=True):
-                            success, msg = approve_user_and_pay_commission(p_row['ID'])
-                            if success: st.success(msg); st.rerun()
-                            else: st.error(msg)
-                    with btn_col2:
-                        if st.button(f"❌ Reject ({p_row['ID']})", key=f"rej_{p_row['ID']}", type="danger", use_container_width=True):
-                            conn = sqlite3.connect(DB_NAME, check_same_thread=False)
-                            cursor = conn.cursor()
-                            cursor.execute("UPDATE pending_users SET Status = 'Rejected' WHERE ID = ?", (p_row['ID'],))
-                            conn.commit()
-                            conn.close()
-                            st.error("விண்ணப்பம் நிராகரிக்கப்பட்டது!")
-                            st.rerun()
+                    if st.button(f"✅ Approve & Make 'Active' ({w_row['Name']})", use_container_width=True):
+                        activate_user_business(w_row['Name'])
+                        st.success(f"🎉 {w_row['Name']} கணக்கு Active செய்யப்பட்டது! கமிஷன் பிரித்தளிக்கப்பட்டது.")
+                        st.rerun()
 
     with adm_tab2:
-        st.subheader("மாஸ்டர் நெட்வொர்க் டேட்டாபேஸ்")
+        st.subheader("மாஸ்டர் நெटவொர்க் தரவுத்தளம்")
         st.dataframe(df_net, use_container_width=True)
 
 # 👤 சாதாரண மெம்பர் திரை
@@ -308,12 +250,97 @@ else:
         
     st.write("---")
     
-    # ரெஃபரல் லிங்க் உருவாக்கம் (அவரவர் கணக்கில் லிங்க் காட்டும்)
-    # நீங்கள் லைவ் செய்யும்போது இந்த 'localhost:8501' என்ற இடத்தை உங்கள் வெப்சைட் லிங்காக மாற்றிக்கொள்ளலாம் நண்பா
-    shareable_ref_link = f"http://localhost:8501/?ref={current_user}"
-    st.info(f"{L['ref_link_lbl']} `{shareable_ref_link}`")
+    # தற்போதைய கணக்கு நிலவரம் காட்டுதல் (Free Account / Working / Active)
+    status_colors = {"Free Account": "🔵 Free Account (விபரங்களை நிரப்பவும்)", "Working": "⚙️ Working (அட்மின் சரிபார்ப்பில் உள்ளது)", "Active": "🟢 Active (வியாபாரம் செயல்பாட்டில் உள்ளது)"}
+    st.markdown(f"### {L['status_lbl']} **{status_colors.get(user_info['Status'], user_info['Status'])}**")
     
-    col1, col2, col3 = st.columns(3)
-    with col1: st.metric(L["ref_id"], str(user_info['Unique_ID']))
-    with col2: st.metric(L["my_sales"], f"${user_info['Sales']:,.1f}")
-    with col3: st.metric(L["my_earnings"], f"${user_info['Earnings']:,.1f}")
+    # 1. பயனர் இன்னும் Free Account ஆக இருந்தால் விபரங்களை வாங்கும் படிவம் காட்டும்
+    if user_info['Status'] == 'Free Account':
+        st.warning("⚠️ உங்கள் கணக்கை 'Working' நிலைக்கு மாற்ற கீழே உள்ள விபரங்களை பூர்த்தி செய்து ஏதேனும் ஒரு வியாபாரத் தொகையைத் தேர்வு செய்யவும் நண்பா!")
+        
+        with st.form("activation_form"):
+            f_email = st.text_input("மின்னஞ்சல் முகவரி (Email Address):")
+            f_phone = st.text_input("தொலைபேசி இலக்கம் (Phone Number):")
+            f_bank = st.text_input("பணம் வித்ரோல் பெறும் வங்கி கணக்கு விபரங்கள் (Bank Name, Branch, A/C No):")
+            f_id_passport = st.text_input("பாஸ்போர்ட் அல்லது அடையாள அட்டை இலக்கம் (Passport / ID Number):")
+            
+            packages = [5, 10, 20, 40, 50, 80, 100, 150, 250, 500, 1000]
+            f_pkg = st.selectbox("📦 நீங்கள் முதலீடு செய்ய விரும்பும் வியாபாரத் தொகை ($):", packages)
+            
+            # கமிஷன் நேரலைக் கணக்கீடு
+            p_rate, p_comm = get_package_commission_details(f_pkg)
+            st.info(f"📊 இந்த தொகுப்பிற்கான அப்லைனர் கமிஷன் வீதம்: {p_rate}% | கமிஷன் தொகை: ${p_comm}")
+            
+            f_slip = st.file_uploader("📸 பணம் செலுத்திய சிலிப் / ரசீது (Upload Slip):", type=["png", "jpg", "jpeg"])
+            
+            if st.form_submit_button("🔥 விபரங்களை சமர்ப்பி (Move to Working Status)"):
+                if f_email.strip() and f_phone.strip() and f_bank.strip() and f_id_passport.strip() and f_slip:
+                    # ரசீதைச் சேமித்தல்
+                    file_path = os.path.join(UPLOAD_DIR, f"{current_user}_receipt.png")
+                    with open(file_path, "wb") as f:
+                        f.write(f_slip.getbuffer())
+                    
+                    conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+                    cursor = conn.cursor()
+                    # நிலையை 'Working' ஆக மாற்றுதல்
+                    cursor.execute('''
+                        UPDATE network 
+                        SET Email=?, Phone=?, Bank_Account=?, ID_Passport=?, Package=?, Status='Working' 
+                        WHERE Name=?
+                    ''', (f_email.strip(), f_phone.strip(), f_bank.strip(), f_id_passport.strip(), f_pkg, current_user))
+                    conn.commit()
+                    conn.close()
+                    st.success("🎉 விபரங்கள் வெற்றிகரமாகச் சமர்ப்பிக்கப்பட்டது! உங்கள் கணக்கு தற்போது 'Working' நிலைக்கு மாறியுள்ளது. அட்மின் சரிபார்த்த பின் 'Active' ஆகும் நண்பா.")
+                    st.rerun()
+                else:
+                    st.error("⚠️ தயவுசெய்து அனைத்து விபரங்களையும், ரசீதையும் அப்லோடு செய்யவும்!")
+
+    # 2. கணக்கு 'Working' அல்லது 'Active' ஆக இருந்தால் வழக்கம் போல டேஷ்போர்டு காட்டும்
+    else:
+        shareable_ref_link = f"http://localhost:8501/?ref={current_user}"
+        st.info(f"{L['ref_link_lbl']} `{shareable_ref_link}`")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1: st.metric(L["ref_id"], str(user_info['Unique_ID']))
+        with col2: st.metric(L["my_sales"], f"${user_info['Sales']:,.1f}")
+        with col3: st.metric(L["my_earnings"], f"${user_info['Earnings']:,.1f}")
+        
+        menu_tab1, menu_tab2, menu_tab3 = st.tabs([L["menu_dash"], L["menu_with"], L["menu_tree"]])
+        
+        with menu_tab1:
+            st.write("### 📊 உங்கள் கணக்கு விபரங்கள்")
+            st.write(f"📧 **மின்னஞ்சல்:** {user_info['Email']}")
+            st.write(f"📞 **தொலைபேசி:** {user_info['Phone']}")
+            st.write(f"🏦 **வங்கி கணக்கு:** {user_info['Bank_Account']}")
+            st.write(f"🆔 **ID/பாஸ்போர்ட் இலக்கம்:** {user_info['ID_Passport']}")
+            st.write(f"📦 **செயலில் உள்ள பேக்கேஜ்:** ${user_info['Package']}")
+            
+        with menu_tab2:
+            st.header(L["menu_with"])
+            st.write(f"💵 உங்கள் தற்போதைய வருமானம்: **${user_info['Earnings']:,.1f}**")
+            with st.form("withdraw_form"):
+                w_amount = st.number_input("வித்ரா செய்ய வேண்டிய தொகை ($):", min_value=10.0, value=50.0)
+                if st.form_submit_button("🚀 வித்ரா கோரிக்கை அனுப்பு"):
+                    if w_amount <= user_info['Earnings'] and user_info['Status'] == 'Active':
+                        # வித்ரா லாஜிக்
+                        conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+                        cursor = conn.cursor()
+                        req_id = "REQ" + str(uuid.uuid4().int)[:4]
+                        cursor.execute("INSERT INTO withdrawals VALUES (?, ?, ?, 'Bank Transfer', 'Pending')", (req_id, current_user, w_amount))
+                        conn.commit()
+                        conn.close()
+                        st.success("🎉 வித்ரா கோரிக்கை அட்மினுக்கு அனுப்பப்பட்டது!"); st.rerun()
+                    elif user_info['Status'] != 'Active':
+                        st.error("❌ உங்கள் கணக்கு 'Active' நிலையில் இருந்தால் மட்டுமே பணம் எடுக்க முடியும் நண்பா!")
+                    else:
+                        st.error("❌ போதிய வருமானம் இல்லை!")
+
+        with menu_tab3:
+            st.header(L["menu_tree"])
+            l1_members = df_net[df_net['Sponsor'] == current_user]
+            with st.container(border=True):
+                st.markdown(f"👑 நீங்கள்: **{current_user}** ({user_info['Status']})")
+                if l1_members.empty: st.info("டீம் உறுப்பினர்கள் யாரும் இல்லை.")
+                else:
+                    for _, l1_row in l1_members.iterrows():
+                        st.success(f"└ 👤 {l1_row['Name']} - நிலை: {l1_row['Status']} (Sponsor: You)")
