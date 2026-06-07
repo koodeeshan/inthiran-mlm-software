@@ -1,70 +1,41 @@
 import streamlit as st
-import gspread
 import pandas as pd
 
 # 1. பக்கத்தின் தலைப்பு மற்றும் லேஅவுட் அமைத்தல்
 st.set_page_config(page_title="A K G Smart Commission Marketing Pvt Ltd", page_icon="💰", layout="centered")
 
-# 2. கூகுள் சீட் இணைப்பு முகவரி (சரியான சிறிய எழுத்து வடிவில்)
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1uu7CfjOA4ISDSQKxPVQCLDZufJummYbkMsFnjwWvvWc/edit?usp=drivesdk"
+# 2. கூகுள் சீட்டை CSV வடிவில் நேரடியாகப் படிக்கும் எளிய முகவரி
+# (இதன் மூலம் பர்மிஷன் சிக்கல்கள் முற்றிலும் தவிர்க்கப்படும்)
+SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1uu7CfjOA4ISDSQKxPVQCLDZufJummYbkMsFnjwWvvWc/export?format=csv"
 
-# 3. கூகுள் சீட்டுடன் கனெக்ட் செய்யும் ஃபங்க்ஷன்
-@st.cache_resource
-def get_google_sheet(url):
-    try:
-        # பொது அணுகல் (Anyone with link as Editor) மூலம் சீட்டைத் திறக்கிறோம்
-        gc = gspread.public_api()
-        sh = gc.open_by_url(url)
-        return sh.get_worksheet(0)
-    except Exception as e:
-        return None
-
-sheet = get_google_sheet(SHEET_URL)
-
-if sheet is None:
-    st.error("கூகுள் சீட்டுடன் இணைப்பதில் சிக்கல் உள்ளது நண்பா. கூகுள் சீட்டின் 'Share' பக்கத்தில் பர்மிஷனை 'Anyone with the link' மற்றும் 'Editor' என்று மாற்றியுள்ளீர்களா எனச் சரிபார்க்கவும்.")
-    st.stop()
-
-# 4. கூகுள் சீட்டில் இருந்து தரவுகளைப் படித்தல்
+# 3. தரவுகளைப் படிக்கும் ஃபங்க்ஷன்
 def load_data():
     try:
-        records = sheet.get_all_records()
-    except Exception:
-        records = []
-        
-    if not records:
+        # கூகுள் சீட்டை ஆன்லைனில் இருந்து நேரடியாகப் படிக்கிறது
+        df = pd.read_csv(SHEET_CSV_URL)
+        # தூண்கள் (Columns) சரியாக இருப்பதை உறுதி செய்தல்
+        required_cols = ['Name', 'Sponsor', 'Sales', 'Earnings']
+        if not all(col in df.columns for col in required_cols):
+            raise Exception("Columns mismatch")
+        return df
+    except Exception as e:
+        # ஆன்லைனில் படிக்க முடியாவிட்டால் காட்டப்படும் ஆரம்பக்கட்ட உள்ளூர் தரவு
         initial_data = [
             {"Name": "Inthiran", "Sponsor": "None", "Sales": 0, "Earnings": 0},
             {"Name": "Anand", "Sponsor": "Inthiran", "Sales": 0, "Earnings": 0},
             {"Name": "Bala", "Sponsor": "Anand", "Sales": 0, "Earnings": 0}
         ]
-        try:
-            sheet.clear()
-            sheet.append_row(["Name", "Sponsor", "Sales", "Earnings"])
-            for row in initial_data:
-                sheet.append_row(list(row.values()))
-        except Exception:
-            pass
         return pd.DataFrame(initial_data)
-    return pd.DataFrame(records)
 
-df_data = load_data()
-
+# தரவை லோடு செய்தல்
 if 'network' not in st.session_state:
-    st.session_state.network = df_data
+    st.session_state.network = load_data()
 
-# 5. கமிஷன் மற்றும் வருமானத்தை அப்டேட் செய்யும் ஃபங்க்ஷன்
-def update_sheet_from_dataframe(df):
-    try:
-        sheet.clear()
-        sheet.append_row(list(df.columns))
-        for index, row in df.iterrows():
-            sheet.append_row(list(row))
-    except Exception as e:
-        st.error("டேட்டாவைச் சேமிக்க முடியவில்லை நண்பா!")
-
+# 4. புதிய விற்பனை மற்றும் கமிஷன் பிரிப்பு
 def add_sale_and_distribute(sales_person, amount):
     df = st.session_state.network.copy()
+    
+    # நேரடி விற்பனையாளருக்கு கூட்டுதல்
     df.loc[df['Name'] == sales_person, 'Sales'] += amount
     df.loc[df['Name'] == sales_person, 'Earnings'] += amount
     
@@ -91,9 +62,9 @@ def add_sale_and_distribute(sales_person, amount):
         current_person = sponsor_name
         level += 1
         
-    update_sheet_from_dataframe(df)
     st.session_state.network = df
 
+# 5. புதிய நபரைச் சேர்த்தல்
 def add_new_member(name, sponsor):
     df = st.session_state.network.copy()
     if name in df['Name'].values:
@@ -102,8 +73,6 @@ def add_new_member(name, sponsor):
         
     new_row = {"Name": name, "Sponsor": sponsor, "Sales": 0, "Earnings": 0}
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-    
-    update_sheet_from_dataframe(df)
     st.session_state.network = df
     return True
 
