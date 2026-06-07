@@ -6,7 +6,7 @@ import sqlite3
 # 1. பக்கத்தின் தலைப்பு மற்றும் லேஅவுட் அமைத்தல்
 st.set_page_config(page_title="G A K Smart Marketing Private Limited", page_icon="💰", layout="centered")
 
-DB_NAME = 'gak_marketing_v4.db'
+DB_NAME = 'gak_marketing_v5.db'
 
 # --- பன்மொழி அகராதி (Multi-Language Dictionary) ---
 LANG_DICT = {
@@ -61,7 +61,8 @@ LANG_DICT = {
         "search_lbl": "தேட வேண்டிய மெம்பர் பெயர் (Username):",
         "search_no_user": "❌ இந்த பெயரில் உங்கள் நெட்வொர்க்கில் எந்த உறுப்பினரும் இல்லை நண்பா!",
         "search_details": "👤 பயனர் விபரம்: ",
-        "lang_lbl": "🌐 மொழியைத் தேர்ந்தெடுக்கவும் / Select Language / භාෂාව තෝරන්න"
+        "lang_lbl": "🌐 மொழியைத் தேர்ந்தெடுக்கவும் / Select Language / භාෂාව තෝරන්න",
+        "rank_lbl": "🏆 உங்கள் தகுதி நிலை (Rank)"
     },
     "English": {
         "title": "💰 G A K Smart Marketing",
@@ -114,7 +115,8 @@ LANG_DICT = {
         "search_lbl": "Enter Member Username:",
         "search_no_user": "❌ No member found with this name in your network!",
         "search_details": "👤 Member Details: ",
-        "lang_lbl": "🌐 Select Language / மொழியைத் தேர்ந்தெடுக்கவும் / භාෂාව තෝරන්න"
+        "lang_lbl": "🌐 Select Language / மொழியைத் தேர்ந்தெடுக்கவும் / භාෂාව තෝරන්න",
+        "rank_lbl": "🏆 Your Current Rank"
     },
     "සිංහල": {
         "title": "💰 G A K Smart Marketing",
@@ -167,9 +169,27 @@ LANG_DICT = {
         "search_lbl": "සාමාජිකයාගේ නම ඇතුලත් කරන්න:",
         "search_no_user": "❌ මෙම නමින් සාමාජිකයෙකු ජාලයේ නොමැත!",
         "search_details": "👤 සාමාජික විස්තර: ",
-        "lang_lbl": "🌐 භාෂාව තෝරන්න / மொழியைத் தேர்ந்தெடுக்கவும் / Select Language"
+        "lang_lbl": "🌐 භාෂාව තෝරන්න / மொழியைத் தேர்ந்தெடுக்கவும் / Select Language",
+        "rank_lbl": "🏆 ඔබගේ වත්මන් තත්ත්වය"
     }
 }
+
+# வருமானத்தின் அடிப்படையில் தகுதி நிலையை (Rank) தானாகக் கணக்கிடும் பங்க்ஷன்
+def calculate_rank(earnings):
+    if earnings <= 10000:
+        return "Normal"
+    elif earnings <= 25000:
+        return "Silver 🥈"
+    elif earnings <= 50000:
+        return "Gold 🥇"
+    elif earnings <= 100000:
+        return "Platinum 💎"
+    elif earnings <= 250000:
+        return "Star ⭐"
+    elif earnings <= 500000:
+        return "Two Star ⭐⭐"
+    else:
+        return "Three Star ⭐⭐⭐"
 
 def init_db():
     conn = sqlite3.connect(DB_NAME, check_same_thread=False)
@@ -200,7 +220,7 @@ def init_db():
     if cursor.fetchone()[0] == 0:
         cursor.execute("INSERT INTO network VALUES (?, ?, ?, ?, ?, ?, ?)", ('Inthiran', '123', 'None', 0.0, 0.0, 'GAK001', 'தமிழ்'))
         cursor.execute("INSERT INTO network VALUES (?, ?, ?, ?, ?, ?, ?)", ('Anand', '123', 'Inthiran', 0.0, 0.0, 'GAK002', 'English'))
-        cursor.execute("INSERT INTO network VALUES (?, ?, ?, ?, ?, ?, ?)", ('Bala', '123', 'Anand', 0.0, 0.0, 'GAK003', 'සිංஹල'))
+        cursor.execute("INSERT INTO network VALUES (?, ?, ?, ?, ?, ?, ?)", ('Bala', '123', 'Anand', 0.0, 0.0, 'GAK003', 'සිංහල'))
         conn.commit()
     conn.close()
 
@@ -228,20 +248,18 @@ def get_withdrawals_df(username=None, all_reqs=False):
     conn.close()
     return df
 
-# அட்மின் கோரிக்கையை ஏற்பதற்கான பங்க்ஷன்
 def process_admin_withdrawal(req_id, action):
     conn = sqlite3.connect(DB_NAME, check_same_thread=False)
     cursor = conn.cursor()
-    
     cursor.execute("SELECT Name, Amount FROM withdrawals WHERE ID = ?", (req_id,))
     res = cursor.fetchone()
     if res:
         name, amt = res
         if action == "Approve":
             cursor.execute("UPDATE network SET Earnings = Earnings - ? WHERE Name = ?", (amt, name))
-            cursor.execute("UPDATE withdrawals SET Status = 'Approved (செலுத்தப்பட்டது)' WHERE ID = ?", (req_id,))
+            cursor.execute("UPDATE withdrawals SET Status = 'Approved' WHERE ID = ?", (req_id,))
         else:
-            cursor.execute("UPDATE withdrawals SET Status = 'Rejected (நிராகரிக்கப்பட்டது)' WHERE ID = ?", (req_id,))
+            cursor.execute("UPDATE withdrawals SET Status = 'Rejected' WHERE ID = ?", (req_id,))
     conn.commit()
     conn.close()
 
@@ -249,6 +267,8 @@ if 'logged_in_user' not in st.session_state:
     st.session_state.logged_in_user = None
 if 'current_lang' not in st.session_state:
     st.session_state.current_lang = "தமிழ்"
+if 'is_admin_logged' not in st.session_state:
+    st.session_state.is_admin_logged = False
 
 df_net = get_network_df()
 L = LANG_DICT[st.session_state.current_lang]
@@ -307,9 +327,11 @@ def request_withdrawal(username, amount, method):
     conn.commit()
     conn.close()
 
+
 # --- UI வடிவமைப்பு ---
 
-if st.session_state.logged_in_user is None:
+# அட்மின் அல்லது பயனர் யாரும் லாகின் செய்யாத பொது காட்டும் திரை
+if st.session_state.logged_in_user is None and not st.session_state.is_admin_logged:
     st.session_state.current_lang = st.selectbox(L["lang_lbl"], ["தமிழ்", "English", "සිංහල"], index=["தமிழ்", "English", "සිංහල"].index(st.session_state.current_lang))
     L = LANG_DICT[st.session_state.current_lang]
     
@@ -325,14 +347,21 @@ if st.session_state.logged_in_user is None:
         login_pass = st.text_input(L["password"], type="password", key="l_pass", placeholder="...")
         
         if st.button(L["btn_login"], use_container_width=True):
-            user_row = df_net[(df_net['Name'] == login_user) & (df_net['Password'].astype(str) == str(login_pass))]
-            if not user_row.empty:
-                st.session_state.logged_in_user = login_user
-                st.session_state.current_lang = user_row.iloc[0]['Language']
-                st.success(L["login_success"])
+            # 1. ரகசிய அட்மின் லாகின் விபரங்களை சரிபார்த்தல்
+            if login_user.strip() == "gak smart marketing private limited" and login_pass.strip() == "0771057786":
+                st.session_state.is_admin_logged = True
+                st.success("👑 அட்மின் கமாண்ட் சென்டர் வெற்றிகரமாகத் திறக்கப்பட்டது!")
                 st.rerun()
             else:
-                st.error(L["login_err"])
+                # 2. சாதாரண பயனர் லாகின் விபரங்களை சரிபார்த்தல்
+                user_row = df_net[(df_net['Name'] == login_user) & (df_net['Password'].astype(str) == str(login_pass))]
+                if not user_row.empty:
+                    st.session_state.logged_in_user = login_user
+                    st.session_state.current_lang = user_row.iloc[0]['Language']
+                    st.success(L["login_success"])
+                    st.rerun()
+                else:
+                    st.error(L["login_err"])
                 
     with tab2:
         st.subheader(L["signup_title"])
@@ -350,6 +379,54 @@ if st.session_state.logged_in_user is None:
             else:
                 st.warning(L["reg_fill_warn"])
 
+# 👑 அட்மின் லாகின் செய்திருந்தால் காட்டும் தனி திரை
+elif st.session_state.is_admin_logged:
+    st.title("👑 GAK Admin Command Center")
+    st.caption("Secret Administrative Management Panel")
+    
+    if st.sidebar.button("🚪 அட்மின் லாக்-அவுட்", type="primary", use_container_width=True):
+        st.session_state.is_admin_logged = False
+        st.rerun()
+        
+    st.write("---")
+    adm_tab1, adm_tab2 = st.tabs(["📥 Pending Withdrawals", "Full Network & Ranks DB"])
+    
+    with adm_tab1:
+        st.subheader("நிலுவையில் உள்ள வித்ரா கோரிக்கைகள்")
+        df_all_w = get_withdrawals_df(all_reqs=True)
+        pending_w = df_all_w[df_all_w['Status'] == 'Pending']
+        
+        if pending_w.empty:
+            st.info("தற்போது எந்தவொரு வித்ரா கோரிக்கைகளும் நிலுவையில் இல்லை நண்பா!")
+        else:
+            for _, w_row in pending_w.iterrows():
+                with st.container(border=True):
+                    st.write(f"👤 **பெயர்:** {w_row['Name']} | 💰 **தொகை:** Rs.{w_row['Amount']:,}")
+                    st.write(f"🏦 **முறை:** {w_row['Method']} | 🆔 **கோரிக்கை ஐடி:** {w_row['ID']}")
+                    btn_col1, btn_col2 = st.columns(2)
+                    with btn_col1:
+                        if st.button(f"✅ Approve {w_row['ID']}", key=f"app_{w_row['ID']}", use_container_width=True):
+                            process_admin_withdrawal(w_row['ID'], "Approve")
+                            st.success("Approved!")
+                            st.rerun()
+                    with btn_col2:
+                        if st.button(f"❌ Reject {w_row['ID']}", key=f"rej_{w_row['ID']}", type="danger", use_container_width=True):
+                            process_admin_withdrawal(w_row['ID'], "Reject")
+                            st.error("Rejected!")
+                            st.rerun()
+                            
+    with adm_tab2:
+        st.subheader("ஒட்டுமொத்த மெம்பர்களின் விபரங்கள் (மாஸ்டர் டேட்டாபேஸ்)")
+        
+        # அட்மின் டேபிளில் ரேங்குகளைச் சேர்த்துக் காட்டுதல்
+        df_rank_display = df_net.copy()
+        df_rank_display['Rank'] = df_rank_display['Earnings'].apply(calculate_rank)
+        st.dataframe(df_rank_display, use_container_width=True)
+        
+        total_sales_volume = df_net['Sales'].sum()
+        st.metric("📈 நிறுவனத்தின் மொத்த பிசினஸ் (Total Sales)", f"Rs. {total_sales_volume:,.1f}")
+
+# 👤 சாதாரண மெம்பர் லாகின் செய்திருந்தால் காட்டும் திரை
 else:
     df_net = get_network_df()
     current_user = st.session_state.logged_in_user
@@ -358,78 +435,4 @@ else:
     st.session_state.current_lang = user_info['Language']
     L = LANG_DICT[st.session_state.current_lang]
     
-    chosen_lang = st.sidebar.selectbox("🌐 Language / மொழி", ["தமிழ்", "English", "සිංහල"], index=["தமிழ்", "English", "සිංහල"].index(st.session_state.current_lang))
-    if chosen_lang != st.session_state.current_lang:
-        update_user_language(current_user, chosen_lang)
-        st.session_state.current_lang = chosen_lang
-        st.rerun()
-
-    # அட்மின் செக்ஷனை சைடுபாரில் காட்டுதல் (ஒன்லி ஃபார் Inthiran)
-    is_admin = (current_user.lower() == "inthiran")
-    if is_admin:
-        st.sidebar.write("---")
-        st.sidebar.subheader("👑 Admin Operations")
-        show_admin = st.sidebar.checkbox("🔒 Open Admin Panel", value=False)
-    else:
-        show_admin = False
-
-    col_title, col_logout = st.columns([4, 1])
-    with col_title:
-        st.title(f"{L['welcome']}{current_user}!")
-        st.caption("G A K Smart Marketing Private Limited")
-    with col_logout:
-        if st.button(L["logout"], type="secondary"):
-            st.session_state.logged_in_user = None; st.rerun()
-        
-    st.write("---")
-    
-    # அட்மின் பேனல் ஆன் செய்யப்பட்டிருந்தால்
-    if show_admin and is_admin:
-        st.title("👑 GAK Admin Command Center")
-        st.write("நிறுவனத்தின் நிதி மற்றும் நெட்வொர்க் மேலாண்மைப் பகுதி.")
-        
-        adm_tab1, adm_tab2 = st.tabs(["📥 Pending Withdrawals", "👥 Full Network DB"])
-        
-        with adm_tab1:
-            st.subheader("உறுப்பினர்களின் வித்ரா கோரிக்கைகள்")
-            df_all_w = get_withdrawals_df(all_reqs=True)
-            pending_w = df_all_w[df_all_w['Status'] == 'Pending']
-            
-            if pending_w.empty:
-                st.info("தற்போது எந்தவொரு வித்ரா கோரிக்கைகளும் நிலுவையில் இல்லை நண்பா!")
-            else:
-                for _, w_row in pending_w.iterrows():
-                    with st.container(border=True):
-                        st.write(f"👤 **பெயர்:** {w_row['Name']} | 💰 **தொகை:** Rs.{w_row['Amount']:,}")
-                        st.write(f"🏦 **முறை:** {w_row['Method']} | 🆔 **கோரிக்கை ஐடி:** {w_row['ID']}")
-                        
-                        btn_col1, btn_col2 = st.columns(2)
-                        with btn_col1:
-                            if st.button(f"✅ Approve {w_row['ID']}", key=f"app_{w_row['ID']}", use_container_width=True):
-                                process_admin_withdrawal(w_row['ID'], "Approve")
-                                st.success("Approved!")
-                                st.rerun()
-                        with btn_col2:
-                            if st.button(f"❌ Reject {w_row['ID']}", key=f"rej_{w_row['ID']}", type="danger", use_container_width=True):
-                                process_admin_withdrawal(w_row['ID'], "Reject")
-                                st.error("Rejected!")
-                                st.rerun()
-                                
-        with adm_tab2:
-            st.subheader("ஒட்டுமொத்த மெம்பர்களின் விபரங்கள் (Master Database)")
-            st.dataframe(df_net, use_container_width=True)
-            
-            # மொத்த பிசினஸ் கால்குலேட்டர்
-            total_sales_volume = df_net['Sales'].sum()
-            st.metric("📈 நிறுவனத்தின் மொத்த பிசினஸ் (Total Sales Volume)", f"Rs. {total_sales_volume:,.1f}")
-            
-    else:
-        # சாதாரண மெம்பர் வியூ (Dashboard Tabs)
-        menu_tab1, menu_tab2, menu_tab3, menu_tab4 = st.tabs([L["menu_dash"], L["menu_with"], L["menu_tree"], L["menu_search"]])
-        
-        with menu_tab1:
-            col1, col2, col3 = st.columns(3)
-            with col1: st.metric(label=L["ref_id"], value=str(user_info['Unique_ID']))
-            with col2: st.metric(label=L["my_sales"], value=f"Rs.{user_info['Sales']:,.1f}")
-            with col3: st.metric(label=L["my_earnings"], value=f"Rs.{user_info['Earnings']:,.1f}")
-   
+    chosen_lang = st.sidebar.selectbox("🌐 Language / மொழி", ["தமிழ்", "English", "සිංහල"], index=["தமிழ்", "English", "සිංහල"].index(st.session_state.curre
