@@ -1,12 +1,11 @@
 import streamlit as st
 import pandas as pd
-import uuid
 import sqlite3
-import os
 
+# பக்க வடிவமைப்பு
 st.set_page_config(page_title="G A K Smart Marketing", layout="centered")
 
-# CSS: அனைத்தும் மறைக்க
+# CSS: மெனு மற்றும் அம்புக்குறியை மறைக்க
 hide_css = """
 <style>
     #MainMenu, footer, header {visibility: hidden !important;}
@@ -17,38 +16,49 @@ st.markdown(hide_css, unsafe_allow_html=True)
 
 # மல்டி-லாங்குவேஜ் அகராதி
 LANG_DATA = {
-    "தமிழ்": {"login": "உள்நுழைக", "user": "பயனர் பெயர்", "pass": "கடவுச்சொல்", "lang": "தமிழ்"},
-    "සිංහල": {"login": "ඇතුල් වන්න", "user": "පරිශීලක නාමය", "pass": "මුරපදය", "lang": "සිංහල"},
-    "English": {"login": "Login", "user": "Username", "pass": "Password", "lang": "English"}
+    "English": {"login": "Login", "user": "Username", "pass": "Password", "dash": "Dashboard", "tree": "Network"},
+    "සිංහල": {"login": "ඇතුල් වන්න", "user": "පරිශීලක නාමය", "pass": "මුරපදය", "dash": "පුවරුව", "tree": "ජාලය"},
+    "தமிழ்": {"login": "உள்நுழைக", "user": "பயனர் பெயர்", "pass": "கடவுச்சொல்", "dash": "டேஷ்போர்டு", "tree": "நெட்வொர்க்"}
 }
 
-# Database setup
+# Database
 DB_NAME = 'gak_marketing_v7.db'
-def init_db():
-    conn = sqlite3.connect(DB_NAME, check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS network (Name TEXT UNIQUE, Password TEXT, Status TEXT)''')
-    cursor.execute("SELECT COUNT(*) FROM network WHERE Name='AdminGAK'")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO network (Name, Password, Status) VALUES (?, ?, ?)", ('AdminGAK', '0771057786', 'Admin'))
-        conn.commit()
-    conn.close()
-init_db()
+conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+cursor = conn.cursor()
+cursor.execute('CREATE TABLE IF NOT EXISTS network (Name TEXT UNIQUE, Password TEXT, Status TEXT)')
+conn.commit()
+conn.close()
 
 # Session State
+if 'logged_in' not in st.session_state: st.session_state.logged_in = False
 if 'lang' not in st.session_state: st.session_state.lang = "English"
 
-# UI
+# UI பகுதி
 st.title("💰 G A K Smart Marketing")
-st.session_state.lang = st.selectbox("🌐 Select Language / භාෂාව තෝරන්න / மொழியைத் தேர்ந்தெடுக்கவும்", ["English", "සිංහල", "தமிழ்"])
-
+st.session_state.lang = st.selectbox("🌐 Language / භාෂාව / மொழி", ["English", "සිංහල", "தமிழ்"])
 L = LANG_DATA[st.session_state.lang]
 
-u = st.text_input(L["user"])
-p = st.text_input(L["pass"], type="password")
-
-if st.button(L["login"]):
-    if u == "AdminGAK" and p == "0771057786":
-        st.success("Admin Access Granted")
-    else:
-        st.error("Login Failed")
+if not st.session_state.logged_in:
+    u = st.text_input(L["user"])
+    p = st.text_input(L["pass"], type="password")
+    if st.button(L["login"]):
+        if u == "AdminGAK" and p == "0771057786":
+            st.session_state.logged_in = True
+            st.session_state.user = "Admin"
+            st.rerun()
+        else:
+            st.error("Invalid Login")
+else:
+    # லாகின் ஆன பிறகு காண்பிக்கும் பகுதி
+    st.success(f"Welcome {st.session_state.user}!")
+    
+    # மெனு டேப்கள்
+    tab1, tab2 = st.tabs([L["dash"], L["tree"]])
+    with tab1:
+        st.write("Dashboard content goes here")
+    with tab2:
+        st.write("Network tree goes here")
+        
+    if st.button("Logout"):
+        st.session_state.logged_in = False
+        st.rerun()
