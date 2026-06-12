@@ -1,15 +1,5 @@
-import streamlit as st import streamlit as st
-
-# Hide the "Manage app" button
-hide_streamlit_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            .st-emotion-cache-1h9sg0j {visibility: hidden;} /* இது குறிப்பிட்ட அந்த பகுதியை மறைக்கும் */
-            </style>
-            """
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-
+import streamlit as st 
+import streamlit as st
 import pandas as pd
 import sqlite3
 
@@ -53,7 +43,7 @@ if not st.session_state.logged_in:
     u = st.text_input(L["user"])
     p = st.text_input(L["pass"], type="password")
     if st.button(L["login"]):
-        if u == "AdminGAK" and p == "0771057786":
+        if u == "GAK" and p == "123":
             st.session_state.logged_in = True
             st.session_state.user = "Admin"
             st.rerun()
@@ -61,7 +51,7 @@ if not st.session_state.logged_in:
             st.error("Invalid Login")
 else:
     # லாகின் ஆன பிறகு காண்பிக்கும் பகுதி
-    st.success(f"Welcome {st.session_state.user}!")
+    st.success(f"வெல்கம் kodeeshan {st.session_state.user}!")
     
     # மெனு டேப்கள்
     tab1, tab2 = st.tabs([L["dash"], L["tree"]])
