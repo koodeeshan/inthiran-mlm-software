@@ -1,49 +1,44 @@
 import streamlit as st
+import pandas as pd
 
-# 1. பக்கத்தின் அமைப்பு
-st.set_page_config(page_title="G A K Smart Marketing", layout="wide")
+# CSS - Manage App பொத்தானை மறைக்க
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    [data-testid="stDecoration"] {display: none;}
+    </style>
+""", unsafe_allow_html=True)
 
-# 2. அந்த 'Manage app' அம்புக்குறியை மறைக்கும் குறியீடு
-hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            [data-testid="stDecoration"] {display: none;}
-            </style>
-            """
-st.markdown(hide_st_style, unsafe_allow_html=True)
+st.title("💰 G A K Smart Marketing System")
 
-# 3. ஹெடர் பகுதி
-st.title("💰 G A K Smart Marketing")
+# தரவுத்தளம் (எளிமையான முறையில்)
+if 'members' not in st.session_state:
+    st.session_state.members = pd.DataFrame(columns=["ID", "Name", "Referrer", "Level"])
 
-# 4. மொழித் தேர்வு
-lang = st.selectbox("🌐 Language / භාෂාව / மொழி", ["English", "Tamil", "Sinhala"])
+# மெனு தேர்வு
+menu = st.sidebar.radio("Navigation", ["Dashboard", "Register New Member", "Network Tree"])
 
-# 5. உள்நுழைவு நிலை (வெற்றிகரமான லாகின் உதாரணம்)
-st.success("Welcome Admin!")
+if menu == "Dashboard":
+    st.subheader("📊 Business Dashboard")
+    col1, col2 = st.columns(2)
+    col1.metric("Total Members", len(st.session_state.members))
+    col2.metric("Total Payout", f"${len(st.session_state.members) * 10}")
+    st.write("வணிக முன்னேற்ற அறிக்கை...")
 
-# 6. டேஷ்போர்டு தாவல்கள் (Tabs)
-tab1, tab2 = st.tabs(["📊 Dashboard", "🌐 Network"])
+elif menu == "Register New Member":
+    st.subheader("📝 New Member Registration")
+    with st.form("register"):
+        name = st.text_input("Member Name")
+        referrer = st.text_input("Referrer ID")
+        if st.form_submit_button("Register"):
+            new_data = {"ID": len(st.session_state.members)+1, "Name": name, "Referrer": referrer, "Level": 1}
+            st.session_state.members = pd.concat([st.session_state.members, pd.DataFrame([new_data])], ignore_index=True)
+            st.success(f"{name} வெற்றிகரமாக சேர்க்கப்பட்டார்!")
 
-with tab1:
-    st.subheader("Dashboard Overview")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Total Members", "1,250")
-    col2.metric("Active Members", "980")
-    col3.metric("Total Revenue", "$15,400")
-    st.write("இங்கு உங்கள் மார்க்கெட்டிங் புள்ளிவிவரங்கள் அமையும்.")
-
-with tab2:
-    st.subheader("Network Structure")
-    st.write("உங்கள் குழுவின் கட்டமைப்பு மற்றும் உறுப்பினர்களின் விபரங்கள் இங்கே இருக்கும்.")
-    # உதாரணத்திற்கு ஒரு டேபிள்
-    st.table({
-        "Name": ["அருண்", "குமார்", "கவிதா"],
-        "Level": ["Gold", "Silver", "Platinum"],
-        "Earnings": ["$500", "$300", "$800"]
-    })
-
-# 7. லாக் அவுட் பட்டன்
-if st.button("Logout"):
-    st.warning("நீங்கள் வெளியேறிவிட்டீர்கள்.")
-    
+elif menu == "Network Tree":
+    st.subheader("🌳 Organization Network")
+    if not st.session_state.members.empty:
+        st.table(st.session_state.members)
+    else:
+        st.info("உறுப்பினர்கள் யாரும் இல்லை.")
