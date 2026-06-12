@@ -1,4 +1,15 @@
-import streamlit as st
+import streamlit as st import streamlit as st
+
+# Hide the "Manage app" button
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            .st-emotion-cache-1h9sg0j {visibility: hidden;} /* இது குறிப்பிட்ட அந்த பகுதியை மறைக்கும் */
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 import pandas as pd
 import sqlite3
 
